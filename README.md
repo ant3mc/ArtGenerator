@@ -29,20 +29,6 @@ Art Generator is a browser-based creative tool that generates real-time abstract
 - **Web Audio API** support (for audio features)
 - Recommended: GPU with OpenGL ES 3.0 support
 
-## 🎮 Usage
-
-1. **Main Menu:**
-   - Click **Settings** to configure parameters
-   - Click **Start** to begin generation
-   - Click **About** to see version and license info
-   - Select language (🇷🇺/🇬🇧) at the bottom
-
-2. **During Generation:**
-   - **Click anywhere** to stop and return to menu
-   - Press **ESC** to exit fullscreen
-   - The app auto-stops after 5 minutes (prevents GPU overheating)
-
-
 ## ⚙️ Configuration Options
 
 ### Generation Method
