@@ -70,7 +70,6 @@ Art Generator is a browser-based creative tool that generates real-time abstract
 ```
 
 ### Performance Considerations
-- 60 FPS rendering on mid-range GPUs
 - Automatic canvas resizing
 - Efficient Float32Array uniform buffers
 - Oscillator pooling for audio
@@ -86,13 +85,6 @@ This project is licensed under **GNU Affero General Public License v3.0 or later
   - Free to use, modify, and distribute
   - Source code must be disclosed for network usage
   - Copyleft license - derivative works must be AGPL-licensed
-
-
-## 🤝 Contributing
-
-**Development Notes:**
-- No build tools required - pure vanilla JS
-- Follow existing code style (ES6 classes, async/await)
 
 ## 🐛 Troubleshooting
 
