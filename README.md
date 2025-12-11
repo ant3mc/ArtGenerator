@@ -8,7 +8,7 @@ An interactive generative art application that creates mesmerizing abstract visu
 
 ## 🎨 Overview
 
-Art Generator is a browser-based creative tool that generates real-time abstract patterns using WebGL 2.0 shaders. It combines mathematical noise functions, radial gradients, and dynamic color animations to produce colored visual effects, optionally accompanied by pentatonic soundscapes.
+Art Generator is a browser-based offline app( html with integrated js and css) that generates real-time abstract patterns using WebGL 2.0 shaders. It combines mathematical noise functions, radial gradients, and dynamic color animations to produce colored visual effects, optionally accompanied by pentatonic soundscapes.
 
 **Key Features:**
 - Real-time GPU-accelerated rendering
