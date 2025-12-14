@@ -4,7 +4,7 @@
 [![WebGL](https://img.shields.io/badge/WebGL-2.0-orange.svg)](https://get.webgl.org/webgl2/)
 [![Language](https://img.shields.io/badge/Language-JavaScript%20ES6-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-An interactive generative art application that creates mesmerizing abstract visualizations with synchronized audio( optional), running entirely in your browser.
+An interactive generative art application that creates relax abstract visualizations with synchronized audio( optional), running entirely in your browser.
 
 ## 🎨 Overview
 
