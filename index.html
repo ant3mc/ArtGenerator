@@ -283,7 +283,8 @@ void main(){
             float noiseVal=fbm((uv-spotCenter)*4.0+vec2(u_time*0.1,0.0));
             float spotShape=smoothstep(currentSize+globalNoise,currentSize-0.1+globalNoise,dist);
             float animHue=mod(baseHue+u_time*u_hueSpeed,1.0);
-            saturation=0.7+noiseVal*0.3;
+            // ИЗМЕНЕНО: saturation = 0.6 + noiseVal * 0.4 (было 0.7 + noiseVal * 0.3)
+            saturation=0.6+noiseVal*0.4;
             float brightness=0.6+noiseVal*0.4;
             vec3 spotColor=hsv2rgb(vec3(animHue,saturation,brightness));
             float alpha=spotShape*(0.7-dist/currentSize*0.4);
@@ -1296,4 +1297,3 @@ void main(){
     </script>
 </body>
 </html>
-
