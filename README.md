@@ -19,9 +19,6 @@ Art Generator is a browser-based offline app( html with integrated js and css) t
 - Fullscreen immersive mode
 - Auto-stop safety timer (5 minutes)
 
-## 🚀 Demo
-
-
 ## 📋 Requirements
 
 - **Modern browser** with WebGL 2.0 support:
