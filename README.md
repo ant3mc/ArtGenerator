@@ -1,4 +1,4 @@
-                          # Art Generator
+# Art Generator
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![WebGL](https://img.shields.io/badge/WebGL-2.0-orange.svg)](https://get.webgl.org/webgl2/)
