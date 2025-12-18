@@ -1,4 +1,4 @@
-# Art Generator
+                          # Art Generator
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![WebGL](https://img.shields.io/badge/WebGL-2.0-orange.svg)](https://get.webgl.org/webgl2/)
@@ -18,9 +18,6 @@ Art Generator is a browser-based offline app( html with integrated js and css) t
 - Fully responsive design with multi-language support (Русский/English)
 - Fullscreen immersive mode
 - Auto-stop safety timer (5 minutes)
-
-## 🚀 Demo
-
 
 ## 📋 Requirements
 
