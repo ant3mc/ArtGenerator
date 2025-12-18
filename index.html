@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            font-family: Arial, sans-serif; 
+            background: #111;
+        }
+        .screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center; 
+            background: #111; color: white; padding: 20px 10px; 
+            z-index: 10; scroll-padding-top: 120px; 
+        }
+        .setup-group { margin: 20px 0; text-align: center; width: 100%; max-width: 400px; }
+        .setup-group h3 { margin-bottom: 10px; }
+        select, button, input { 
+            padding: 10px 20px; margin: 5px; font-size: 16px; 
+            border-radius: 5px; border: 1px solid #444; background: #222; color: white; 
+            width: 100%; max-width: 300px; 
+        }
+        button { cursor: pointer; background: #0066cc; border: none; }
+        button:hover { background: #0055aa; }
+        input[type="range"] { padding: 10px 0; }
+        #volumeValue, #saturationDisplay { 
+            display: inline-block; min-width: 50px; text-align: center; margin-left: 10px; 
+        }
+        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+        #errorOverlay { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.7); z-index: 20; 
+            justify-content: center; align-items: center; flex-direction: column; 
+        }
+        #errorModal { 
+            background: white; color: black; padding: 20px; border-radius: 10px; 
+            max-width: 90%; max-height: 80%; overflow: auto; text-align: left; 
+        }
+        #errorText { font-family: monospace; white-space: pre-wrap; margin-bottom: 15px; }
+        #closeErrorBtn { 
+            padding: 10px 20px; background: #cc0000; color: white; border: none; 
+            border-radius: 5px; cursor: pointer; 
+        }
+        #loading { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            color: white; font-size: 18px; background: rgba(0,0,0,0.7); 
+            padding: 15px 25px; border-radius: 8px; display: none; z-index: 15; 
+        }
+
+        @media (max-width: 699px), (orientation: portrait) {
+            .screen {
+                overflow-y: auto;
+                min-height: 100vh;
+            }
+            .setup-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+            .setup-column {
+                width: 100%;
+                max-width: 450px;
+                margin-bottom: 20px;
+            }
+            .screen h2 {
+                margin-top: 20px;
+            }
+            #backButton {
+                margin-top: 30px;
+                width: 200px;
+            }
+        }
+
+        @media (min-width: 700px) and (orientation: landscape) {
+            .screen {
+                overflow-y: auto;
+                padding: 30px 20px;
+                justify-content: flex-start;
+            }
+            .setup-container {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+                width: 100%;
+                max-width: 1000px;
+            }
+            .setup-column {
+                display: flex;
+                flex-direction: column;
+                width: clamp(300px, 45vw, 450px);
+                min-height: 300px;
+                margin-bottom: 120px;
+            }
+            .screen h2 {
+                width: 100%;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            #backButton {
+                margin-top: 30px;
+                width: 200px;
+                align-self: center;
+            }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 30;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background: #222;
+            color: #eee;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 90vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainMenu" class="screen">
+        <h2>Art Generator</h2>
+        <button id="settingsButton" style="margin-top: 30px;">Settings</button>
+        <button id="startButtonMain">Start</button>
+    </div>
+    <div id="settingsScreen" class="screen" style="display: none;">
+        <h2>Generation Settings</h2>
+        <div class="setup-container">
+            <div class="setup-column">
+                <div class="setup-group">
+                    <h3>Generation Method</h3>
+                    <select id="generationMethod">
+                        <option value="simplex_8">Simplex Perlin — 8 Spots</option>
+                        <option value="simplex_10" selected>Simplex Perlin — 10 Spots</option>
+                        <option value="simplex_12">Simplex Perlin — 12 Spots</option>
+                        <option value="radial_8">Radial Gradient — 8 Spots</option>
+                        <option value="radial_10">Radial Gradient — 10 Spots</option>
+                        <option value="radial_12">Radial Gradient — 12 Spots</option>
+                    </select>
+                </div>
+                <div class="setup-group">
+                    <h3>Color Accent</h3>
+                    <select id="colorAccent">
+                        <option value="none">No Accent</option>
+                        <option value="red">Red+</option>
+                        <option value="green">Green+</option>
+                        <option value="blue">Blue+</option>
+                        <option value="red_minus">Red-</option>
+                        <option value="green_minus">Green-</option>
+                        <option value="blue_minus">Blue-</option>
+                    </select>
+                </div>
+                <div class="setup-group">
+                    <h3>Hue Rotation Speed</h3>
+                    <select id="hueSpeed">
+                        <option value="0.05" selected>1×</option>
+                        <option value="0.075">1.5×</option>
+                        <option value="0.1">2×</option>
+                    </select>
+                </div>
+            </div>
+            <div class="setup-column">
+                <div class="setup-group" id="saturationGroup">
+                    <h3>Saturation (Radial)</h3>
+                    <input type="range" id="saturationValue" min="0.4" max="1.0" step="0.05" value="0.7">
+                    <span id="saturationDisplay">0.70</span>
+                </div>
+                <div class="setup-group">
+                    <h3>Sound (Pentatonic)</h3>
+                    <select id="audioMode">
+                        <option value="none" selected>No Sound</option>
+                        <option value="pentatonic_c_3octaves">(C, 440, 3 Oct)</option>
+                        <option value="pentatonic_a_3octaves">(A, 440, 3 Oct)</option>
+                        <option value="pentatonic_c_432_3oct">(C, 432, 3 Oct)</option>
+                        <option value="pentatonic_a_432_3oct">(A, 432, 3 Oct)</option>
+                        <option value="pentatonic_c">(C, 440)</option>
+                        <option value="pentatonic_a">(A, 440)</option>
+                        <option value="pentatonic_c_432">(C, 432)</option>
+                        <option value="pentatonic_a_432">(A, 432)</option>
+                    </select>
+                </div>
+                <div class="setup-group">
+                    <h3>Volume</h3>
+                    <input type="range" id="masterVolume" min="0.05" max="0.5" step="0.05" value="0.1">
+                    <span id="volumeValue">0.10</span>
+                </div>
+            </div>
+        </div>
+        <button id="backButton">Back</button>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div id="loading">Initialization...</div>
+    <div id="errorOverlay">
+        <div id="errorModal">
+            <h3>An Error Occurred</h3>
+            <pre id="errorText"></pre>
+            <button id="closeErrorBtn">Close</button>
+        </div>
+    </div>
+
+    <div id="licenseModalContainer"></div>
+
+    <script type="x-shader/x-vertex" id="vertexShader300">#version 300 es
+// Simple vertex shader for fullscreen quad
+in vec2 a_position;
+void main() { gl_Position = vec4(a_position, 0.0, 1.0); }</script>
+    
+    <script type="x-shader/x-fragment" id="fragmentShader300">#version 300 es
+precision highp float;
+
+// Uniform variables
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_hueSpeed;
+uniform int u_spotCount;
+uniform vec2 u_spotCenters[12];
+uniform float u_spotPhases[12];
+uniform float u_spotHues[12];
+uniform vec3 u_colorBoost;
+uniform int u_generationMethod;
+uniform float u_fixedSaturation;
+
+// Simplex noise implementation (snoise)
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
+float snoise(vec2 v){const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);vec2 i1;i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod289(i);vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);m=m*m;m=m*m;vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;vec3 ox=floor(x+0.5);vec3 a0=x-ox;m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.0*dot(m,g);}
+
+// Fractal Brownian Motion for multi-layered noise
+float fbm(vec2 p){float value=0.0;float amplitude=1.0;for(int i=0;i<3;i++){value+=amplitude*snoise(p);p*=2.0;amplitude*=0.5;}return value;}
+
+// HSV to RGB conversion
+vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.0,2.0/3.0,1.0/3.0,3.0);vec3 p=abs(fract(c.xxx+K.xyz)*6.0-K.www);return c.z*mix(K.xxx,clamp(p-K.xyz,0.0,1.0),c.y);}
+
+out vec4 fragColor;
+void main(){
+    vec2 uv=gl_FragCoord.xy/u_resolution.xy;
+    vec4 finalColor=vec4(0.0);
+    
+    // Summation of each spot's contribution
+    for(int i=0;i<12;i++){
+        if(i>=u_spotCount)break;
+        
+        vec2 spotCenter=u_spotCenters[i];
+        float phaseOffset=u_spotPhases[i];
+        float baseHue=u_spotHues[i];
+        
+        // Spot breathing animation
+        float breathSpeed=0.5;
+        float breath=sin(u_time*breathSpeed+phaseOffset)*0.5+0.5;
+        float minSize=0.1;
+        float maxSize=0.35;
+        float currentSize=mix(minSize,maxSize,breath);
+        
+        vec2 toCenter=uv-spotCenter;
+        float dist=length(toCenter);
+        float globalNoise=fbm(uv*5.0+vec2(0.0,u_time*0.1))*0.05;
+        float saturation;
+        
+        // Generation method selection (Simplex or Radial)
+        if(u_generationMethod==0){
+            float noiseVal=fbm((uv-spotCenter)*4.0+vec2(u_time*0.1,0.0));
+            float spotShape=smoothstep(currentSize+globalNoise,currentSize-0.1+globalNoise,dist);
+            float animHue=mod(baseHue+u_time*u_hueSpeed,1.0);
+            // ИЗМЕНЕНО: saturation = 0.6 + noiseVal * 0.4 (было 0.7 + noiseVal * 0.3)
+            saturation=0.6+noiseVal*0.4;
+            float brightness=0.6+noiseVal*0.4;
+            vec3 spotColor=hsv2rgb(vec3(animHue,saturation,brightness));
+            float alpha=spotShape*(0.7-dist/currentSize*0.4);
+            alpha=clamp(alpha,0.0,0.7);
+            finalColor+=vec4(spotColor*alpha,alpha);
+        }else if(u_generationMethod==1){
+            float inner=currentSize*0.3;
+            float outer=currentSize;
+            float gradient=1.0-smoothstep(inner+globalNoise,outer+globalNoise,dist);
+            float animHue=mod(baseHue+u_time*u_hueSpeed,1.0);
+            saturation=u_fixedSaturation;
+            float brightness=0.7;
+            vec3 spotColor=hsv2rgb(vec3(animHue,saturation,brightness));
+            float alpha=gradient*0.7;
+            alpha=clamp(alpha,0.0,0.7);
+            finalColor+=vec4(spotColor*alpha,alpha);
+        }
+    }
+    
+    finalColor.rgb*=u_colorBoost;
+    finalColor=clamp(finalColor,0.0,1.0);
+    fragColor=finalColor;
+}</script>
+    
+    <script>
+        class GenerativeArtApp {
+            constructor() {
+                // Configuration constants
+                this.MAX_PLACEMENT_ATTEMPTS = 990;
+                this.AUTO_STOP_DELAY_MS = 300000;
+                
+                // Application metadata
+                this.APP_METADATA = {
+                    version: "1.0",
+                    author: "ant3mc",
+                    year: "2025",
+                    license: "GNU AGPL-3.0-or-later"
+                };
+                
+                this.canvas = document.getElementById('canvas');
+                this.gl = null;
+                this.mainMenu = document.getElementById('mainMenu');
+                this.settingsScreen = document.getElementById('settingsScreen');
+                this.settingsButton = document.getElementById('settingsButton');
+                this.startButtonMain = document.getElementById('startButtonMain');
+                this.backButton = document.getElementById('backButton');
+                this.generationMethodSelect = document.getElementById('generationMethod');
+                this.colorAccentSelect = document.getElementById('colorAccent');
+                this.audioModeSelect = document.getElementById('audioMode');
+                this.masterVolumeSlider = document.getElementById('masterVolume');
+                this.volumeValueDisplay = document.getElementById('volumeValue');
+                this.errorOverlay = document.getElementById('errorOverlay');
+                this.errorText = document.getElementById('errorText');
+                this.closeErrorBtn = document.getElementById('closeErrorBtn');
+                this.loadingIndicator = document.getElementById('loading');
+                this.saturationGroup = document.getElementById('saturationGroup');
+                this.saturationSlider = document.getElementById('saturationValue');
+                this.saturationDisplay = document.getElementById('saturationDisplay');
+                this.userSaturationValue = 0.7;
+                this.isRunning = false;
+                this.animationId = null;
+                this.startTime = 0;
+                this.spotCount = 0;
+                this.spotCenters = [];
+                this.spotBreathPhases = [];
+                this.spotHues = [];
+                this.colorBoost = [1.0, 1.0, 1.0];
+                this.currentBaseMethod = 'simplex';
+                this.centersArray = new Float32Array(12 * 2);
+                this.phasesArray = new Float32Array(12);
+                this.huesArray = new Float32Array(12);
+                this.hueSpeed = 0.05;
+                this.hueSpeedSelect = document.getElementById('hueSpeed');
+                this.frequencySets = {
+                    pentatonic_c: [
+                        261.626, 293.665, 329.628, 392.000, 440.000,
+                        523.251, 587.330, 659.255, 783.991, 864.000
+                    ],
+                    pentatonic_a: [
+                        220.000, 261.626, 293.665, 329.628, 392.000,
+                        440.000, 523.251, 587.330, 659.255, 768.000
+                    ],
+                    pentatonic_c_432: [
+                        256.869, 288.000, 324.000, 384.000, 432.000,
+                        513.738, 576.000, 648.000, 768.000, 864.000
+                    ],
+                    pentatonic_a_432: [
+                        216.000, 256.869, 288.000, 324.000, 384.000,
+                        432.000, 513.738, 576.000, 648.000, 768.000
+                    ],
+                    pentatonic_c_3octaves: [
+                        130.813, 146.832, 164.814, 196.000, 220.000,
+                        261.626, 293.665, 329.628, 392.000, 440.000,
+                        523.251, 587.330, 659.255, 783.991, 864.000
+                    ],
+                    pentatonic_a_3octaves: [
+                        110.000, 130.813, 146.832, 164.814, 196.000,
+                        220.000, 261.626, 293.665, 329.628, 392.000,
+                        440.000, 523.251, 587.330, 659.255, 768.000
+                    ],
+                    pentatonic_c_432_3oct: [
+                        128.435, 144.000, 162.000, 192.000, 216.000,
+                        256.869, 288.000, 324.000, 384.000, 432.000,
+                        513.738, 576.000, 648.000, 768.000, 864.000
+                    ],
+                    pentatonic_a_432_3oct: [
+                        108.000, 128.435, 144.000, 162.000, 192.000,
+                        216.000, 256.869, 288.000, 324.000, 384.000,
+                        432.000, 513.738, 576.000, 648.000, 768.000
+                    ]
+                };
+                this.activeOscillators = new Map();
+                this.audioContext = null;
+                this.masterGain = null;
+                this.highPassFilter = null;
+                this.limiter = null;
+                this.autoStopTimer = null;
+
+                // UI localization system
+                // ИЗМЕНЕНО: Язык по умолчанию теперь английский ('en')
+                try {
+                    this.currentLanguage = localStorage.getItem('artgen-language') || 'en';
+                } catch (e) {
+                    this.currentLanguage = 'en';
+                }
+                
+                this.translations = {
+                    ru: {
+                        appTitle: "Арт-генератор",
+                        settingsBtn: "Настройки",
+                        startBtn: "Старт",
+                        aboutBtn: "О программе",
+                        backBtn: "Назад",
+                        closeBtn: "Закрыть",
+                        showLicenseBtn: "📄 Показать полную лицензию",
+                        openLicenseOnlineBtn: "🌐 Открыть на gnu.org",
+                        understandBtn: "Понятно",
+                        settingsTitle: "Настройки генерации",
+                        methodLabel: "Метод генерации",
+                        colorLabel: "Цветовой акцент",
+                        saturationLabel: "Насыщенность (радиальный)",
+                        speedLabel: "Скорость смены цвета",
+                        volumeLabel: "Громкость звука",
+                        audioLabel: "Звук (пентатоника)",
+                        errorTitle: "Произошла ошибка",
+                        startError: "Ошибка при запуске генерации",
+                        loadingText: "Инициализация...",
+                        aboutTitle: `Арт-генератор v1.0`,
+                        author: "Автор",
+                        year: "Год",
+                        license: "Лицензия",
+                        aboutDescription: "Это свободное программное обеспечение. Вы можете использовать, изменять и распространять его на условиях лицензии AGPL-3.0-or-later.",
+                        methodOptions: {
+                            simplex_8: "Симплекс Перлин — 8 пятен",
+                            simplex_10: "Симплекс Перлин — 10 пятен",
+                            simplex_12: "Симплекс Перлин — 12 пятен",
+                            radial_8: "Радиальный градиент — 8 пятен",
+                            radial_10: "Радиальный градиент — 10 пятен",
+                            radial_12: "Радиальный градиент — 12 пятен"
+                        },
+                        colorOptions: {
+                            none: "Без акцента",
+                            red: "Красный+",
+                            green: "Зелёный+",
+                            blue: "Синий+",
+                            red_minus: "Красный-",
+                            green_minus: "Зелёный-",
+                            blue_minus: "Синий-"
+                        },
+                        speedOptions: {
+                            "0.05": "1×",
+                            "0.075": "1.5×",
+                            "0.1": "2×"
+                        },
+                        audioOptions: {
+                            none: "Без звука",
+                            pentatonic_c_3octaves: "(C, 440, 3 окт)",
+                            pentatonic_a_3octaves: "(A, 440, 3 окт)",
+                            pentatonic_c_432_3oct: "(C, 432, 3 окт)",
+                            pentatonic_a_432_3oct: "(A, 432, 3 окт)",
+                            pentatonic_c: "(C, 440)",
+                            pentatonic_a: "(A, 440)",
+                            pentatonic_c_432: "(C, 432)",
+                            pentatonic_a_432: "(A, 432)"
+                        },
+                        licenseModalTitle: "GNU Affero General Public License v3.0",
+                        offlineTitle: "⚠️ Не удалось загрузить лицензию автоматически",
+                        offlineReasonFile: "Запущено из локального файла. Браузер блокирует автоматический доступ.",
+                        offlineReasonOffline: "Отсутствует подключение к интернету.",
+                        offlineReasonGeneric: "Ошибка загрузки",
+                        offlineInstructions: "Лицензия доступна локально:",
+                        offlineStep1: "Откройте папку с этим файлом  (из скачанного архива)",
+                        offlineStep2: "Найдите файл LICENSE (поставляется с программой)",
+                        offlineStep3: "Откройте его в текстовом редакторе (Notepad, VS Code и т.д.)",
+                        orVisit: "Или посетите официальную версию:",
+                        gnuLicenseText: "gnu.org/licenses/agpl-3.0.txt"
+                    },
+                    en: {
+                        appTitle: "Art Generator",
+                        settingsBtn: "Settings",
+                        startBtn: "Start",
+                        aboutBtn: "About",
+                        backBtn: "Back",
+                        closeBtn: "Close",
+                        showLicenseBtn: "📄 Show Full License",
+                        openLicenseOnlineBtn: "🌐 Open on gnu.org",
+                        understandBtn: "OK",
+                        settingsTitle: "Generation Settings",
+                        methodLabel: "Generation Method",
+                        colorLabel: "Color Accent",
+                        saturationLabel: "Saturation (Radial)",
+                        speedLabel: "Hue Rotation Speed",
+                        volumeLabel: "Volume",
+                        audioLabel: "Sound (Pentatonic)",
+                        errorTitle: "An Error Occurred",
+                        startError: "Error starting generation",
+                        loadingText: "Initialization...",
+                        aboutTitle: `Art Generator v1.0`,
+                        author: "Author",
+                        year: "Year",
+                        license: "License",
+                        aboutDescription: "This is free software. You can use, modify and distribute it under the terms of AGPL-3.0-or-later.",
+                        methodOptions: {
+                            simplex_8: "Simplex Perlin — 8 Spots",
+                            simplex_10: "Simplex Perlin — 10 Spots",
+                            simplex_12: "Simplex Perlin — 12 Spots",
+                            radial_8: "Radial Gradient — 8 Spots",
+                            radial_10: "Radial Gradient — 10 Spots",
+                            radial_12: "Radial Gradient — 12 Spots"
+                        },
+                        colorOptions: {
+                            none: "No Accent",
+                            red: "Red+",
+                            green: "Green+",
+                            blue: "Blue+",
+                            red_minus: "Red-",
+                            green_minus: "Green-",
+                            blue_minus: "Blue-"
+                        },
+                        speedOptions: {
+                            "0.05": "1×",
+                            "0.075": "1.5×",
+                            "0.1": "2×"
+                        },
+                        audioOptions: {
+                            none: "No Sound",
+                            pentatonic_c_3octaves: "(C, 440, 3 Oct)",
+                            pentatonic_a_3octaves: "(A, 440, 3 Oct)",
+                            pentatonic_c_432_3oct: "(C, 432, 3 Oct)",
+                            pentatonic_a_432_3oct: "(A, 432, 3 Oct)",
+                            pentatonic_c: "(C, 440)",
+                            pentatonic_a: "(A, 440)",
+                            pentatonic_c_432: "(C, 432)",
+                            pentatonic_a_432: "(A, 432)"
+                        },
+                        licenseModalTitle: "GNU Affero General Public License v3.0",
+                        offlineTitle: "⚠️ Could not load license automatically",
+                        offlineReasonFile: "Running from local file. Browser blocks automatic access.",
+                        offlineReasonOffline: "No internet connection.",
+                        offlineReasonGeneric: "Load error",
+                        offlineInstructions: "License is available locally:",
+                        offlineStep1: "Open the folder containing this file (from downloaded archive)",
+                        offlineStep2: "Find the LICENSE file (included with this program)",
+                        offlineStep3: "Open it in a text editor (Notepad, VS Code, etc.)",
+                        orVisit: "Or visit the official version:",
+                        gnuLicenseText: "gnu.org/licenses/agpl-3.0.txt"
+                    }
+                };
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.updateUILanguage();
+            }
+            
+            bindEvents() {
+                this.settingsButton.addEventListener('click', () => {
+                    this.mainMenu.style.display = 'none';
+                    this.settingsScreen.style.display = 'flex';
+                });
+                this.backButton.addEventListener('click', () => {
+                    this.settingsScreen.style.display = 'none';
+                    this.mainMenu.style.display = 'flex';
+                });
+                this.startButtonMain.addEventListener('click', () => this.startGeneration());
+                this.closeErrorBtn.addEventListener('click', () => this.hideError());
+                this.masterVolumeSlider.addEventListener('input', () => this.updateMasterVolume());
+                this.saturationSlider.addEventListener('input', () => {
+                    this.userSaturationValue = parseFloat(this.saturationSlider.value);
+                    this.saturationDisplay.textContent = this.userSaturationValue.toFixed(2);
+                });
+                this.hueSpeedSelect.addEventListener('change', () => {
+                    this.hueSpeed = parseFloat(this.hueSpeedSelect.value);
+                });
+                this.canvas.addEventListener('click', () => {
+                    if (this.isRunning) this.stopGeneration();
+                });
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && this.isRunning) this.stopGeneration();
+                });
+                document.addEventListener('beforeunload', () => {
+                    if (this.isRunning) this.stopGeneration();
+                });
+                document.addEventListener('fullscreenchange', () => {
+                    if (!document.fullscreenElement && this.isRunning) {
+                        this.stopGeneration();
+                    }
+                });
+
+                // Universal Escape key handler
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        this.handleEscapeKey();
+                    }
+                });
+
+                // Language selection
+                const langSelect = document.createElement('select');
+                langSelect.id = 'languageSelect';
+                langSelect.style.cssText = 'margin-top: 15px; width: 120px; font-size: 14px; padding: 5px;';
+                langSelect.innerHTML = `
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="en">🇬🇧 English</option>
+                `;
+                langSelect.value = this.currentLanguage;
+                this.mainMenu.appendChild(langSelect);
+                
+                langSelect.addEventListener('change', (e) => {
+                    this.currentLanguage = e.target.value;
+                    try {
+                        localStorage.setItem('artgen-language', this.currentLanguage);
+                    } catch (e) {
+                        console.warn('localStorage not available');
+                    }
+                    this.updateUILanguage();
+                });
+                
+                // Dynamic creation of "About" button
+                const aboutButton = document.createElement('button');
+                aboutButton.id = 'aboutButton';
+                aboutButton.textContent = this.translations[this.currentLanguage].aboutBtn;
+                aboutButton.style.cssText = 'margin-top: 15px; background: #333; font-size: 14px;';
+                this.mainMenu.appendChild(aboutButton);
+                
+                // Dynamic creation of "About" modal window
+                const aboutOverlay = document.createElement('div');
+                aboutOverlay.id = 'aboutOverlay';
+                aboutOverlay.className = 'screen';
+                aboutOverlay.style.cssText = 'display: none; z-index: 25;';
+                aboutOverlay.innerHTML = `
+                    <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; max-width: 90%; max-height: 80%; overflow-y: auto;">
+                        <h2>${this.translations[this.currentLanguage].aboutTitle}</h2>
+                        <p id="aboutAuthor"><strong>${this.translations[this.currentLanguage].author}:</strong> ${this.APP_METADATA.author}</p>
+                        <p id="aboutYear"><strong>${this.translations[this.currentLanguage].year}:</strong> ${this.APP_METADATA.year}</p>
+                        <p id="aboutLicense"><strong>${this.translations[this.currentLanguage].license}:</strong> ${this.APP_METADATA.license}</p>
+                        <div style="margin: 20px 0;">
+                            <p id="aboutDescription">${this.translations[this.currentLanguage].aboutDescription}</p>
+                        </div>
+                        <button id="licenseBtn" style="margin: 5px; background: #444;">${this.translations[this.currentLanguage].showLicenseBtn}</button>
+                        <button id="licenseOnlineBtn" style="margin: 5px; background: #444;">${this.translations[this.currentLanguage].openLicenseOnlineBtn}</button>
+                        <div style="margin-top: 20px;">
+                            <button id="closeAboutBtn" style="background: #0066cc;">${this.translations[this.currentLanguage].closeBtn}</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(aboutOverlay);
+                
+                // Container for license modals
+                const licenseModalContainer = document.createElement('div');
+                licenseModalContainer.id = 'licenseModalContainer';
+                document.body.appendChild(licenseModalContainer);
+                
+                // "About" button handler
+                aboutButton.addEventListener('click', () => {
+                    this.mainMenu.style.display = 'none';
+                    aboutOverlay.style.display = 'flex';
+                });
+                
+                // "About" window close handler
+                document.getElementById('closeAboutBtn').addEventListener('click', () => {
+                    aboutOverlay.style.display = 'none';
+                    this.mainMenu.style.display = 'flex';
+                });
+                
+                // "Show Full License" button handler
+                document.getElementById('licenseBtn').addEventListener('click', async () => {
+                    const btn = document.getElementById('licenseBtn');
+                    btn.textContent = this.translations[this.currentLanguage].loadingText + '...';
+                    btn.disabled = true;
+                    
+                    try {
+                        const response = await fetch('LICENSE');
+                        if (!response.ok) throw new Error(`File not found (error ${response.status})`);
+                        const licenseText = await response.text();
+                        this.showLicenseModal(licenseText);
+                    } catch (error) {
+                        console.warn('License loading failed:', error.message);
+                        const isFileProtocol = window.location.protocol === 'file:';
+                        const isOffline = !navigator.onLine;
+                        let message = '';
+                        if (isFileProtocol) {
+                            message = this.translations[this.currentLanguage].offlineReasonFile;
+                        } else if (isOffline) {
+                            message = this.translations[this.currentLanguage].offlineReasonOffline;
+                        } else {
+                            message = `${this.translations[this.currentLanguage].offlineReasonGeneric}: ${error.message}`;
+                        }
+                        this.showOfflineLicenseInstructions(message);
+                    } finally {
+                        btn.textContent = this.translations[this.currentLanguage].showLicenseBtn;
+                        btn.disabled = false;
+                    }
+                });
+                
+                // "Open on gnu.org" button handler
+                document.getElementById('licenseOnlineBtn').addEventListener('click', () => {
+                    window.open('https://www.gnu.org/licenses/agpl-3.0.txt', '_blank', 'noopener,noreferrer');
+                });
+            }
+
+            // Universal Escape key handler
+            handleEscapeKey() {
+                // Check license modal
+                const licenseModal = document.querySelector('.license-modal');
+                if (licenseModal) {
+                    licenseModal.remove();
+                    return;
+                }
+                
+                // Check "About" window
+                const aboutOverlay = document.getElementById('aboutOverlay');
+                if (aboutOverlay && aboutOverlay.style.display === 'flex') {
+                    aboutOverlay.style.display = 'none';
+                    this.mainMenu.style.display = 'flex';
+                    return;
+                }
+                
+                // Check settings screen
+                if (this.settingsScreen.style.display === 'flex') {
+                    this.settingsScreen.style.display = 'none';
+                    this.mainMenu.style.display = 'flex';
+                }
+            }
+
+            updateUILanguage() {
+                const t = this.translations[this.currentLanguage];
+                
+                // Main menu
+                document.querySelector('#mainMenu h2').textContent = t.appTitle;
+                document.getElementById('settingsButton').textContent = t.settingsBtn;
+                document.getElementById('startButtonMain').textContent = t.startBtn;
+                
+                // Update "About" button
+                const aboutButton = document.getElementById('aboutButton');
+                if (aboutButton) {
+                    aboutButton.textContent = t.aboutBtn;
+                }
+                
+                // Settings screen
+                document.querySelector('#settingsScreen h2').textContent = t.settingsTitle;
+                document.getElementById('backButton').textContent = t.backBtn;
+                
+                // Fixed: Proper label binding to controls
+                const labels = document.querySelectorAll('#settingsScreen .setup-group h3');
+                labels[0].textContent = t.methodLabel;      // Generation Method
+                labels[1].textContent = t.colorLabel;       // Color Accent
+                labels[2].textContent = t.speedLabel;       // Hue Rotation Speed
+                document.querySelector('#saturationGroup h3').textContent = t.saturationLabel; // Saturation (separate)
+                labels[4].textContent = t.audioLabel;       // Sound (Pentatonic)
+                labels[5].textContent = t.volumeLabel;      // Volume
+                
+                // Update select options
+                this.updateSelectOptions('generationMethod', t.methodOptions);
+                this.updateSelectOptions('colorAccent', t.colorOptions);
+                this.updateSelectOptions('hueSpeed', t.speedOptions);
+                this.updateSelectOptions('audioMode', t.audioOptions);
+                
+                // Loading and error indicators
+                document.getElementById('loading').textContent = t.loadingText;
+                document.querySelector('#errorModal h3').textContent = t.errorTitle;
+                document.getElementById('closeErrorBtn').textContent = t.closeBtn;
+                
+                // "About" window - Update all dynamic content including description
+                const aboutOverlay = document.getElementById('aboutOverlay');
+                if (aboutOverlay) {
+                    aboutOverlay.querySelector('h2').textContent = t.aboutTitle;
+                    document.getElementById('aboutAuthor').innerHTML = `<strong>${t.author}:</strong> ${this.APP_METADATA.author}`;
+                    document.getElementById('aboutYear').innerHTML = `<strong>${t.year}:</strong> ${this.APP_METADATA.year}`;
+                    document.getElementById('aboutLicense').innerHTML = `<strong>${t.license}:</strong> ${this.APP_METADATA.license}`;
+                    document.getElementById('aboutDescription').textContent = t.aboutDescription;
+                    document.getElementById('licenseBtn').textContent = t.showLicenseBtn;
+                    document.getElementById('licenseOnlineBtn').textContent = t.openLicenseOnlineBtn;
+                    document.getElementById('closeAboutBtn').textContent = t.closeBtn;
+                }
+            }
+            
+            updateSelectOptions(selectId, options) {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '';
+                for (const [value, text] of Object.entries(options)) {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = text;
+                    if (value === currentValue) option.selected = true;
+                    select.appendChild(option);
+                }
+            }
+            
+            updateMasterVolume() {
+                const volume = parseFloat(this.masterVolumeSlider.value);
+                this.volumeValueDisplay.textContent = volume.toFixed(2);
+                if (this.masterGain) {
+                    this.masterGain.gain.value = volume;
+                }
+            }
+            
+            async startGeneration() {
+                try {
+                    this.showLoading(true);
+                    await new Promise(r => setTimeout(r, 100));
+                    this.settingsScreen.style.display = 'none';
+                    this.mainMenu.style.display = 'none';
+                    this.isRunning = true;
+                    this.startTime = performance.now();
+                    this.updateColorBoostFromUI();
+                    await this.initWebGL();
+                    this.initAudio();
+                    this.generateSpots();
+                    await this.enterFullscreen();
+                    this.showLoading(false);
+                    this.renderLoop();
+                    this.autoStopTimer = setTimeout(() => {
+                        if (this.isRunning) this.autoStopGeneration();
+                    }, this.AUTO_STOP_DELAY_MS);
+                } catch (error) {
+                    this.showLoading(false);
+                    this.handleError(`${this.translations[this.currentLanguage].startError}: ${error.message}`);
+                }
+            }
+            
+            async initWebGL() {
+                try {
+                    this.gl = this.canvas.getContext('webgl2', {
+                        antialias: false,
+                        alpha: true,
+                        premultipliedAlpha: false
+                    });
+                    if (!this.gl) throw new Error('WebGL 2.0 not supported');
+                    const gl = this.gl;
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                    await this.createShaderProgram();
+                    this.createFullScreenQuad();
+                    return true;
+                } catch (error) {
+                    console.error('WebGL error:', error);
+                    throw error;
+                }
+            }
+            
+            initAudio() {
+                const audioMode = this.audioModeSelect.value;
+                if (audioMode === 'none') return;
+                const AudioContextClass = window.AudioContext;
+                if (!AudioContextClass) {
+                    console.warn('Web Audio API not supported, continuing without sound');
+                    return;
+                }
+                this.audioContext = new AudioContextClass();
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().catch(e => console.warn('Failed to unlock audio:', e));
+                }
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.value = parseFloat(this.masterVolumeSlider.value);
+                
+                // Limiter to prevent clipping
+                this.limiter = this.audioContext.createDynamicsCompressor();
+                this.limiter.threshold.value = -12.0;
+                this.limiter.ratio.value = 4.0;
+                this.limiter.attack.value = 0.008;
+                this.limiter.release.value = 0.200;
+                
+                // High-pass filter to remove low frequencies
+                this.highPassFilter = this.audioContext.createBiquadFilter();
+                this.highPassFilter.type = 'highpass';
+                this.highPassFilter.frequency.value = 100;
+                this.highPassFilter.Q.value = 0.7;
+                
+                this.masterGain.connect(this.limiter);
+                this.limiter.connect(this.highPassFilter);
+                this.highPassFilter.connect(this.audioContext.destination);
+            }
+            
+            async createShaderProgram() {
+                return new Promise((resolve, reject) => {
+                    const gl = this.gl;
+                    const vertexShader = this.compileShader(gl.VERTEX_SHADER, document.getElementById('vertexShader300').textContent);
+                    const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, document.getElementById('fragmentShader300').textContent);
+                    if (!vertexShader || !fragmentShader) {
+                        reject(new Error('Failed to compile shaders'));
+                        return;
+                    }
+                    const program = gl.createProgram();
+                    gl.attachShader(program, vertexShader);
+                    gl.attachShader(program, fragmentShader);
+                    gl.linkProgram(program);
+                    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                        const error = gl.getProgramInfoLog(program);
+                        gl.deleteProgram(program);
+                        reject(new Error(`Link error: ${error}`));
+                        return;
+                    }
+                    this.program = program;
+                    this.positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
+                    this.resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+                    this.timeUniformLocation = gl.getUniformLocation(program, 'u_time');
+                    this.hueSpeedUniformLocation = gl.getUniformLocation(program, 'u_hueSpeed');
+                    this.spotCountUniformLocation = gl.getUniformLocation(program, 'u_spotCount');
+                    this.spotCentersUniformLocation = gl.getUniformLocation(program, 'u_spotCenters');
+                    this.spotPhasesUniformLocation = gl.getUniformLocation(program, 'u_spotPhases');
+                    this.spotHuesUniformLocation = gl.getUniformLocation(program, 'u_spotHues');
+                    this.colorBoostUniformLocation = gl.getUniformLocation(program, 'u_colorBoost');
+                    this.generationMethodUniformLocation = gl.getUniformLocation(program, 'u_generationMethod');
+                    this.saturationUniformLocation = gl.getUniformLocation(program, 'u_fixedSaturation');
+                    resolve();
+                });
+            }
+            
+            compileShader(type, source) {
+                const gl = this.gl;
+                const shader = gl.createShader(type);
+                let processedSource = source.trim();
+                if (!processedSource.startsWith('#version')) {
+                    const versionMatch = processedSource.match(/^#version\s+\d+\s+es\s*/m);
+                    if (versionMatch) {
+                        const versionLine = versionMatch[0] + '\n';
+                        processedSource = versionLine + processedSource.replace(versionMatch[0], '').trim();
+                    }
+                }
+                gl.shaderSource(shader, processedSource);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    const error = gl.getShaderInfoLog(shader);
+                    console.error('Shader compilation error:', error);
+                    gl.deleteShader(shader);
+                    throw new Error(`Shader compilation error: ${error}`);
+                }
+                return shader;
+            }
+            
+            createFullScreenQuad() {
+                const gl = this.gl;
+                const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+                this.positionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+            }
+            
+            getMinSpotDistance(spotCount) {
+                switch(spotCount) {
+                    case 8: return 0.29;
+                    case 10: return 0.25;
+                    case 12: return 0.21;
+                    default: return 0.21;
+                }
+            }
+            
+            generateSpots() {
+                const methodValue = this.generationMethodSelect.value;
+                let baseMethod = 'simplex';
+                let spotCount = 12;
+                if (methodValue.startsWith('simplex_')) {
+                    baseMethod = 'simplex';
+                    spotCount = parseInt(methodValue.split('_')[1], 10);
+                } else if (methodValue.startsWith('radial_')) {
+                    baseMethod = 'radial';
+                    spotCount = parseInt(methodValue.split('_')[1], 10);
+                }
+                this.spotCount = spotCount;
+                this.currentBaseMethod = baseMethod;
+                this.spotCenters = [];
+                this.spotBreathPhases = [];
+                this.spotHues = [];
+                
+                // Generate spot positions with minimum distance between them
+                for (let i = 0; i < this.spotCount; i++) {
+                    let attempts = 0;
+                    let valid = false;
+                    let x, y;
+                    while (!valid && attempts < this.MAX_PLACEMENT_ATTEMPTS) {
+                        x = 0.05 + Math.random() * 0.9;
+                        y = 0.05 + Math.random() * 0.9;
+                        valid = true;
+                        for (let j = 0; j < this.spotCenters.length; j++) {
+                            const dx = x - this.spotCenters[j][0];
+                            const dy = y - this.spotCenters[j][1];
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < this.getMinSpotDistance(this.spotCount)) {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    }
+                    this.spotCenters.push([x, y]);
+                    this.spotBreathPhases.push(Math.random() * Math.PI * 2);
+                    this.spotHues.push(Math.random());
+                }
+            }
+            
+            updateColorBoostFromUI() {
+                const accent = this.colorAccentSelect.value;
+                switch (accent) {
+                    case 'red': this.colorBoost = [1.1, 1.0, 1.0]; break;
+                    case 'green': this.colorBoost = [1.0, 1.1, 1.0]; break;
+                    case 'blue': this.colorBoost = [1.0, 1.0, 1.1]; break;
+                    case 'red_minus': this.colorBoost = [0.9, 1.0, 1.0]; break;
+                    case 'green_minus': this.colorBoost = [1.0, 0.9, 1.0]; break;
+                    case 'blue_minus': this.colorBoost = [1.0, 1.0, 0.9]; break;
+                    default: this.colorBoost = [1.0, 1.0, 1.0];
+                }
+            }
+            
+            renderLoop() {
+                if (!this.isRunning) return;
+                try {
+                    this.updateCanvasSize();
+                    this.render();
+                    this.updateAudio();
+                } catch (error) {
+                    console.error('Render loop error:', error);
+                    this.stopGeneration();
+                    this.handleError(`${this.translations[this.currentLanguage].errorTitle}: ${error.message}`);
+                    return;
+                }
+                this.animationId = requestAnimationFrame(() => this.renderLoop());
+            }
+            
+            updateCanvasSize() {
+                const canvas = this.canvas;
+                const displayWidth = Math.max(1, canvas.clientWidth);
+                const displayHeight = Math.max(1, canvas.clientHeight);
+                if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+                    canvas.width = displayWidth;
+                    canvas.height = displayHeight;
+                    this.gl.viewport(0, 0, displayWidth, displayHeight);
+                }
+            }
+            
+            render() {
+                const gl = this.gl;
+                const time = (performance.now() - this.startTime) / 1000.0;
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.useProgram(this.program);
+                gl.enableVertexAttribArray(this.positionAttributeLocation);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.vertexAttribPointer(this.positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+                gl.uniform2f(this.resolutionUniformLocation, this.canvas.width, this.canvas.height);
+                gl.uniform1f(this.timeUniformLocation, time);
+                gl.uniform1f(this.hueSpeedUniformLocation, this.hueSpeed);
+                gl.uniform1i(this.spotCountUniformLocation, this.spotCount);
+                
+                // Prepare uniform buffers
+                this.centersArray.fill(0);
+                for (let i = 0; i < this.spotCount; i++) {
+                    this.centersArray[i * 2] = this.spotCenters[i][0];
+                    this.centersArray[i * 2 + 1] = this.spotCenters[i][1];
+                }
+                gl.uniform2fv(this.spotCentersUniformLocation, this.centersArray);
+                
+                for (let i = 0; i < this.spotCount; i++) {
+                    this.phasesArray[i] = this.spotBreathPhases[i];
+                    this.huesArray[i] = this.spotHues[i];
+                }
+                gl.uniform1fv(this.spotPhasesUniformLocation, this.phasesArray);
+                gl.uniform1fv(this.spotHuesUniformLocation, this.huesArray);
+                gl.uniform3fv(this.colorBoostUniformLocation, this.colorBoost);
+                gl.uniform1i(this.generationMethodUniformLocation, this.currentBaseMethod === 'simplex' ? 0 : 1);
+                
+                // Use user saturation for radial method
+                const saturationValue = this.currentBaseMethod === 'radial' ? this.userSaturationValue : 0.8;
+                gl.uniform1f(this.saturationUniformLocation, saturationValue);
+                
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
+            
+            updateAudio() {
+                if (!this.audioContext || this.audioModeSelect.value === 'none') return;
+                const time = (performance.now() - this.startTime) / 1000.0;
+                const audioMode = this.audioModeSelect.value;
+                for (let i = 0; i < this.spotCount; i++) {
+                    const phase = this.spotBreathPhases[i];
+                    const breath = Math.sin(time * 0.5 + phase) * 0.5 + 0.5;
+                    const animHue = (this.spotHues[i] + time * this.hueSpeed) % 1.0;
+                    const targetFrequency = this.calculateFrequency(animHue, audioMode, i);
+                    if (!this.activeOscillators.has(i)) {
+                        this.createOscillator(i);
+                    }
+                    this.updateOscillator(i, breath, targetFrequency);
+                }
+            }
+            
+            createOscillator(index) {
+                if (!this.audioContext || !this.masterGain) return;
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const real = new Float32Array([0, 1]);
+                const imag = new Float32Array([0, 0]);
+                const wave = this.audioContext.createPeriodicWave(real, imag, { disableNormalization: true });
+                oscillator.setPeriodicWave(wave);
+                oscillator.frequency.setValueAtTime(220, this.audioContext.currentTime);
+                gainNode.gain.value = 0;
+                oscillator.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                oscillator.start();
+                this.activeOscillators.set(index, { oscillator, gainNode, frequency: 220, brightness: 0 });
+            }
+            
+            updateOscillator(index, brightness, frequency) {
+                const oscData = this.activeOscillators.get(index);
+                if (!oscData) return;
+                const { gainNode, oscillator } = oscData;
+                const now = this.audioContext.currentTime;
+                const targetGain = Math.max(brightness * 0.05, 0.0001);
+                gainNode.gain.setValueAtTime(targetGain, now);
+                const safeTarget = Math.max(frequency, 0.0001);
+                oscillator.frequency.setValueAtTime(safeTarget, now);
+                oscData.frequency = frequency;
+                oscData.brightness = brightness;
+            }
+            
+            calculateFrequency(hue, audioMode, index) {
+                const frequencySet = this.frequencySets[audioMode];
+                if (!frequencySet || frequencySet.length === 0) {
+                    return 220 + index * 55;
+                }
+                const freqIndex = Math.floor(hue * frequencySet.length) % frequencySet.length;
+                return frequencySet[freqIndex];
+            }
+            
+            stopGeneration() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+                if (this.autoStopTimer) {
+                    clearTimeout(this.autoStopTimer);
+                    this.autoStopTimer = null;
+                }
+                this.stopAudio();
+                this.exitFullscreen();
+                this.mainMenu.style.display = 'flex';
+            }
+            
+            stopAudio() {
+                if (!this.audioContext) return;
+                try {
+                    this.safeAudioCleanup();
+                } catch (e) {
+                    this.safeAudioCleanup();
+                }
+            }
+            
+            safeAudioCleanup() {
+                for (const [, oscData] of this.activeOscillators) {
+                    try {
+                        if (oscData.oscillator) {
+                            oscData.oscillator.stop();
+                            oscData.oscillator.disconnect();
+                        }
+                        if (oscData.gainNode) oscData.gainNode.disconnect();
+                    } catch (e) {
+                        console.warn('Audio resource cleanup error:', e);
+                    }
+                }
+                this.activeOscillators.clear();
+                if (this.masterGain) this.masterGain.disconnect();
+                if (this.limiter) this.limiter.disconnect();
+                if (this.highPassFilter) this.highPassFilter.disconnect();
+                if (this.audioContext && this.audioContext.state !== 'closed') {
+                    this.audioContext.close().catch(e => console.warn('AudioContext close error:', e));
+                }
+                this.audioContext = null;
+                this.masterGain = null;
+                this.limiter = null;
+                this.highPassFilter = null;
+            }
+            
+            async enterFullscreen() {
+                try {
+                    await document.documentElement.requestFullscreen();
+                } catch (e) {
+                    console.warn('Fullscreen entry failed:', e);
+                }
+            }
+            
+            async exitFullscreen() {
+                try {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    }
+                } catch (e) {
+                    console.warn('Fullscreen exit failed:', e);
+                }
+            }
+            
+            // Auto-stop timer activation
+            autoStopGeneration() {
+                if (this.isRunning) this.stopGeneration();
+            }
+            
+            showLoading(show) {
+                this.loadingIndicator.style.display = show ? 'block' : 'none';
+            }
+            
+            handleError(errorMessage) {
+                console.error('App error:', errorMessage);
+                this.errorText.textContent = errorMessage;
+                this.errorOverlay.style.display = 'flex';
+                this.mainMenu.style.display = 'none';
+                this.settingsScreen.style.display = 'none';
+                this.showLoading(false);
+            }
+            
+            hideError() {
+                this.errorOverlay.style.display = 'none';
+                this.mainMenu.style.display = 'flex';
+            }
+
+            // License methods
+            showLicenseModal(licenseText) {
+                const oldModal = document.querySelector('.license-modal');
+                if (oldModal) oldModal.remove();
+                
+                const modal = document.createElement('div');
+                modal.id = 'licenseModal';
+                modal.classList.add('modal-overlay', 'license-modal');
+                
+                modal.innerHTML = `
+                    <div class="modal-content" style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.5;">
+                        <h3 style="margin-top: 0; color: #fff;">${this.translations[this.currentLanguage].licenseModalTitle}</h3>
+                        <pre style="white-space: pre-wrap; word-wrap: break-word;">${licenseText}</pre>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button id="closeLicenseBtn" style="background: #444; color: white; padding: 8px 20px;">
+                                ${this.translations[this.currentLanguage].closeBtn}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('licenseModalContainer').appendChild(modal);
+                
+                document.getElementById('closeLicenseBtn').addEventListener('click', () => {
+                    modal.remove();
+                });
+            }
+            
+            showOfflineLicenseInstructions(errorMessage) {
+                const oldModal = document.querySelector('.license-modal');
+                if (oldModal) oldModal.remove();
+                
+                const modal = document.createElement('div');
+                modal.id = 'licenseModalInstructions';
+                modal.classList.add('modal-overlay', 'license-modal');
+                
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 500px;">
+                        <h3 style="color: #ffaa00;">${this.translations[this.currentLanguage].offlineTitle}</h3>
+                        <p><strong>${this.translations[this.currentLanguage].offlineReasonGeneric}:</strong> ${errorMessage}</p>
+                        
+                        <div style="background: #1a1a1a; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <h4>${this.translations[this.currentLanguage].offlineInstructions}</h4>
+                            <ol style="text-align: left; line-height: 1.8;">
+                                <li>${this.translations[this.currentLanguage].offlineStep1}</li>
+                                <li>${this.translations[this.currentLanguage].offlineStep2}</li>
+                                <li>${this.translations[this.currentLanguage].offlineStep3}</li>
+                            </ol>
+                        </div>
+                        
+                        <p style="margin: 20px 0;">
+                            <strong>${this.translations[this.currentLanguage].orVisit}</strong><br>
+                            <a href="https://www.gnu.org/licenses/agpl-3.0.txt" target="_blank" style="color: #66aaff;">
+                                ${this.translations[this.currentLanguage].gnuLicenseText}
+                            </a>
+                        </p>
+                        
+                        <div style="text-align: center;">
+                            <button id="closeInstructionBtn" style="background: #444; color: white; padding: 10px 20px;">
+                                ${this.translations[this.currentLanguage].understandBtn}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('licenseModalContainer').appendChild(modal);
+                
+                document.getElementById('closeInstructionBtn').addEventListener('click', () => {
+                    modal.remove();
+                });
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new GenerativeArtApp();
+        });
+    </script>
+</body>
+</html>
