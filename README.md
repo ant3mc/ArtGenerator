@@ -1,7 +1,6 @@
 # Art Generator
 
-A real-time generative art application that creates 
-colorful, cloud-like visual patterns using WebGL 2.0 . 
+A real-time generative art application that creates colorful, cloud-like visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
 
 ## Features
 
@@ -41,3 +40,4 @@ for easy distribution and execution.
 ---
 
 **Created by ant3mc · 2025**
+
