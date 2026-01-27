@@ -1,6 +1,6 @@
 # Art Generator
 
-A real-time generative art application that creates colorful, cloud-like visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
+A real-time generative art application for relax, that creates colorful, cloud-like visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
 
 ## Features
 
@@ -11,8 +11,7 @@ A real-time generative art application that creates colorful, cloud-like visual 
 
 - **Customizable Visuals:**
   - 8, 10, or 12 dynamic spots with breathing animations
-  - Adjustable saturation, brightness, opacity, and color variety
-  - Three blend modes: Premultiplied, Straight Alpha, Additive
+  - Adjustable saturation, brightness, opacity, color variety, etc.
 
 ### Audio Reactivity
 - Uses pentatonic scales for harmonious sound generation 
@@ -26,11 +25,9 @@ A real-time generative art application that creates colorful, cloud-like visual 
 - WebGL 2.0 support
 - Modern JavaScript (ES6+) compatible browser
 - Web Audio API for sound generation
-- Fullscreen API support
 
 ## Usage
-The application is contained in a single HTML file 
-for easy distribution and execution.
+The application is contained in a single HTML file( with integrated JS and CSS) for easy distribution and execution.
 
 ## Implementation Notes
 - **Simplex Noise:** Based on Stefan Gustavson’s implementation
@@ -39,5 +36,6 @@ for easy distribution and execution.
 
 ---
 
-**Created by ant3mc · 2025**
+**Created by ant3mc · 2026**
+
 
