@@ -1,13 +1,13 @@
-# Art Generator
+  # Art Generator
 
 A real-time generative art application for relax, that creates colorful, cloud-like visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
 
 ## Features
 
 ### Visual Generation
-- **Two Generation Methods:**
-  - **Simplex Perlin Noise** (recommended) – produces natural, organic patterns
-  - **Radial Gradient** (economic) – creates smooth color transitions
+- **4 Generation Methods:**
+  - 2 in index.html   
+  - 2 in ArtGen.html
 
 - **Customizable Visuals:**
   - 8, 10, or 12 dynamic spots with breathing animations
@@ -37,5 +37,6 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
