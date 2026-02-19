@@ -14,7 +14,7 @@ A real-time generative art application for relax, that creates colorful, cloud-l
   - Adjustable saturation, brightness, opacity, color variety, etc.
 
 ### Audio Reactivity
-- Uses pentatonic scales for harmonious sound generation 
+- Uses pentatonic scales for sound generation 
 - **Sound Mapping:** Each spot corresponds to a frequency based on its hue value;
     volume is based on its brightness value
 
@@ -37,6 +37,7 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
 
