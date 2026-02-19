@@ -7,7 +7,7 @@ A real-time generative art application for relax, that creates colorful, cloud-l
 ### Visual Generation
 - **4 Generation Methods:**
   - 2 in index.html   
-  - 2 in ArtGen.html
+  - 2 in ArtGenAlt.html
 
 - **Customizable Visuals:**
   - 8, 10, or 12 dynamic spots with breathing animations
@@ -37,6 +37,7 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
 
