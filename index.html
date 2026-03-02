@@ -1944,6 +1944,12 @@
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
                 
+                // Не включать звук, если разнообразие цветов < 30
+                if (this.userColorVar < 30) {
+                    console.log('Audio disabled: color variety < 30%');
+                    return;
+                }
+                
                 const AudioContextClass = window.AudioContext;
                 if (!AudioContextClass) return;
                 
