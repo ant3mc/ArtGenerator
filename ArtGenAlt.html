@@ -1918,6 +1918,11 @@
             initAudio() {
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
+
+                // ❗ НЕ включаем звук, если разнообразие цветов меньше 30
+                if (this.userColorVar < 30) {
+                    return;
+                }
                 
                 const AudioContextClass = window.AudioContext;
                 if (!AudioContextClass) return;
