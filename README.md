@@ -1,6 +1,9 @@
-  # Art Generator
+ # Art Generator
 
-A real-time generative art application for relax, that creates colorful, cloud-like visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
+A real-time generative art application for relax, that creates "breathing" visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
+
+![IMG_20260227_150039](https://github.com/user-attachments/assets/d28b93bd-33ea-4f22-b979-75c23fa6696b)
+
 
 ## Features
 
@@ -37,6 +40,7 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
 
