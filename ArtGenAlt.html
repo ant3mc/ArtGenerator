@@ -470,7 +470,7 @@
                     </select>
                 </div>
                 <div class="setup-group" id="opacityGroup" data-i18n-key="opacityLabel">
-                    <h3>Макс. прозрачность</h3>
+                    <h3>Макс. непрозрачность</h3>
                     <input type="range" id="maxOpacity" min="0.1" max="1.0" step="0.05" value="0.55">
                     <span id="opacityDisplay">0.55</span>
                 </div>
@@ -614,8 +614,8 @@
             // Color constants
             DEFAULT_SATURATION: 0.75,
             DEFAULT_BRIGHTNESS: 1.0,
-            DEFAULT_OPACITY: 0.55,          // изменено с 0.65 на 0.55
-            DEFAULT_COLOR_VAR: 40,
+            DEFAULT_OPACITY: 0.50,          // изменено с 0.55 на 0.50
+            DEFAULT_COLOR_VAR: 25,            // изменено с 40 на 25
             BASE_BRIGHTNESS_SIMPLEX: 0.75,
             BASE_BRIGHTNESS_RADIAL: 0.9,
             BRIGHTNESS_VARIATION: 0.3,
@@ -673,7 +673,7 @@
                 methodLabel: "Метод генерации",
                 colorLabel: "Цветовой акцент",
                 saturationLabel: "Насыщенность",
-                opacityLabel: "Макс. прозрачность",
+                opacityLabel: "Макс. непрозрачность",
                 colorVarLabel: "Разнообразие цветов %",
                 speedLabel: "Скорость вращения оттенка",
                 pulseSpeedLabel: "Скорость пульсации",
@@ -1304,7 +1304,7 @@
                     this.userColorVar = PROGRAM_CONSTANTS.DEFAULT_COLOR_VAR;
                 }
                 
-                this.userMaxOpacity = PROGRAM_CONSTANTS.DEFAULT_OPACITY; // теперь 0.55
+                this.userMaxOpacity = PROGRAM_CONSTANTS.DEFAULT_OPACITY; // теперь 0.50
                 this.opacityFalloff = 0.25; // изменено с 0.5 на 0.25
                 
                 this.init();
