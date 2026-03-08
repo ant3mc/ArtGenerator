@@ -1,4 +1,4 @@
- # Art Generator
+   # Art Generator
 
 A real-time generative art application for relax, that creates "breathing" visual patterns using WebGL 2.0 .  All-in-one html file( with integrated CSS and JS).
 
@@ -18,12 +18,11 @@ A real-time generative art application for relax, that creates "breathing" visua
 
 ### Audio Reactivity
 - Uses pentatonic scales for sound generation 
-- **Sound Mapping:** Each spot corresponds to a frequency based on its hue value;
-    volume is based on its brightness value
-
+- **Sound Mapping:** Each spot corresponds to a frequency based on its hue value; volume is based on its brightness value 
+- The audio **mutes** if spots number > 12 or color variety < 30 
 ### Additional Features
 - Auto-stop after 5 minutes
-
+- If the saturation increases, it is recommended to reduce color variety 
 ## Technical Requirements
 - WebGL 2.0 support
 - Modern JavaScript (ES6+) compatible browser
@@ -40,6 +39,7 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
 
