@@ -1784,10 +1784,54 @@
                         hue: hue
                     });
                 }
+
+                // ========== НОВАЯ СОРТИРОВКА ==========
+                // Переставляем пятна так, чтобы порядок индексов соответствовал максимальной удалённости
+                if (this.spotCount > 1) {
+                    this.spots = this.sortSpotsByMaxDistance(this.spots);
+                }
+                // ======================================
                 
                 if (this.spotDataUBO) {
                     this.spotDataUBO.update(this.spots);
                 }
+            }
+            
+            // Сортировка массива пятен: каждый следующий выбирается как самый дальний от предыдущего
+            sortSpotsByMaxDistance(spots) {
+                const n = spots.length;
+                if (n <= 1) return spots;
+                
+                // Индексы ещё не выбранных пятен
+                const remaining = Array.from({ length: n }, (_, i) => i);
+                const sorted = [];
+                
+                // Берём первое пятно произвольно (например, индекс 0)
+                let lastIdx = 0;
+                sorted.push(spots[lastIdx]);
+                remaining.splice(remaining.indexOf(lastIdx), 1);
+                
+                while (remaining.length > 0) {
+                    let bestIdx = -1;
+                    let maxDistSq = -1;
+                    const lastSpot = spots[lastIdx]; // исходный массив, не сортированный
+                    
+                    for (let idx of remaining) {
+                        const dx = spots[idx].center[0] - lastSpot.center[0];
+                        const dy = spots[idx].center[1] - lastSpot.center[1];
+                        const distSq = dx * dx + dy * dy; // квадрат расстояния (корень не нужен)
+                        if (distSq > maxDistSq) {
+                            maxDistSq = distSq;
+                            bestIdx = idx;
+                        }
+                    }
+                    
+                    sorted.push(spots[bestIdx]);
+                    lastIdx = bestIdx;
+                    remaining.splice(remaining.indexOf(bestIdx), 1);
+                }
+                
+                return sorted; // новый порядок объектов (сами объекты не меняются)
             }
             
             getMinSpotDistance(spotCount) {
