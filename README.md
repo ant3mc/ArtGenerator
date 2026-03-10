@@ -40,7 +40,9 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 
 **Created by ant3mc · 2026**
 
-<video src="https://github.com/ant3mc/ArtGenerator/raw/main/FBMSpotsVideo.mp4" controls width="600"></video>
+<video src="https://github.com/ant3mc/ArtGenerator/raw/refs/heads/main/FBMSpotsVideo.mp4" controls width="600"></video>
+
+
 
 
 
