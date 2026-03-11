@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- All comments in this code must be in English. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1944,9 +1945,9 @@
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
                 
-                // Не включать звук, если разнообразие цветов < 30
-                if (this.userColorVar < 30) {
-                    console.log('Audio disabled: color variety < 30%');
+                // Do not enable sound if color variety < 35
+                if (this.userColorVar < 35) {
+                    console.log('Audio disabled: color variety < 35%');
                     return;
                 }
                 
