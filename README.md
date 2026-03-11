@@ -19,7 +19,7 @@ A real-time generative art application for relax, that creates "breathing" visua
 ### Audio Reactivity
 - Uses pentatonic scales for sound generation 
 - **Sound Mapping:** Each spot corresponds to a frequency based on its hue value; volume is based on its brightness value 
-- The audio **mutes** if spots number > 12 or color variety < 30 
+- The audio **mutes** if spots number > 12 or color variety < 35 
 ### Additional Features
 - Auto-stop after 5 minutes
 - If the saturation increases, it is recommended to reduce color variety 
@@ -39,6 +39,7 @@ The application is contained in a single HTML file( with integrated JS and CSS) 
 ---
 
 **Created by ant3mc · 2026**
+
 
 
 
