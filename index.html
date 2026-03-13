@@ -1754,6 +1754,7 @@
                 gl.blendEquation(gl.FUNC_ADD);
             }
             
+            // ================== ИЗМЕНЁННЫЙ МЕТОД generateSpots() ==================
             generateSpots() {
                 const methodValue = this.generationMethodSelect.value;
                 let baseMethod = 'fbm';
@@ -1771,7 +1772,7 @@
                 this.currentBaseMethod = baseMethod;
                 this.spots = [];
                 
-                const colorVarFactor = this.userColorVar / 100.0;
+                const colorVarFactor = this.userColorVar / 100.0; // значение настройки от 0 до 1
                 
                 for (let i = 0; i < this.spotCount; i++) {
                     let attempts = 0;
@@ -1798,15 +1799,25 @@
                     
                     let hue;
                     if (this.spots.length === 0) {
+                        // Первое пятно – случайный оттенок
                         hue = Math.random();
                     } else {
                         const nearestSpot = this.findNearestSpot(x, y, this.spots);
                         if (nearestSpot) {
                             const baseHue = nearestSpot.hue;
-                            const deviation = Math.random() * colorVarFactor;
+                            // Новая логика вычисления отклонения
+                            const minDeviation = Math.min(0.05, colorVarFactor);      // порог 5% (0.05)
+                            let deviation;
+                            if (colorVarFactor > minDeviation) {
+                                // Случайное значение в интервале [minDeviation, colorVarFactor]
+                                deviation = minDeviation + Math.random() * (colorVarFactor - minDeviation);
+                            } else {
+                                // Настройка ≤ 5% → фиксированное отклонение = colorVarFactor
+                                deviation = colorVarFactor;
+                            }
                             hue = (baseHue + deviation) % 1.0;
                         } else {
-                            hue = Math.random();
+                            hue = Math.random();  // резервный случай, но обычно не достигается
                         }
                     }
                     
@@ -1822,6 +1833,7 @@
                     this.spotDataUBO.update(this.spots);
                 }
             }
+            // ================== КОНЕЦ ИЗМЕНЁННОГО МЕТОДА ==================
             
             getMinSpotDistance(spotCount) {
                 return PROGRAM_CONSTANTS.SPOT_DISTANCES[spotCount] || PROGRAM_CONSTANTS.SPOT_DISTANCES[12];
