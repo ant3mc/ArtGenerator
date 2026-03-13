@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- All comments in this file must be in English. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Art Generator Alt v1.3</title>
@@ -478,8 +479,8 @@
             <div class="setup-column">
                 <div class="setup-group" id="saturationGroup" data-i18n-key="saturationLabel">
                     <h3>Насыщенность</h3>
-                    <input type="range" id="saturationValue" min="0.0" max="1.0" step="0.05" value="0.75">
-                    <span id="saturationDisplay">0.75</span>
+                    <input type="range" id="saturationValue" min="0.0" max="1.0" step="0.05" value="0.65">
+                    <span id="saturationDisplay">0.65</span>
                 </div>
                 <!-- Blend mode selection block completely removed -->
                 <div class="setup-group" data-i18n-key="audioLabel">
@@ -612,10 +613,10 @@
             BREATH_TO_GAIN_RATIO: 0.05,
             
             // Color constants
-            DEFAULT_SATURATION: 0.6,          // изменено с 0.75 на 0.6
+            DEFAULT_SATURATION: 0.65,          // <-- changed from 0.6 to 0.65
             DEFAULT_BRIGHTNESS: 1.0,
             DEFAULT_OPACITY: 0.50,
-            DEFAULT_COLOR_VAR: 40,              // изменено с 25 на 40
+            DEFAULT_COLOR_VAR: 40,
             BASE_BRIGHTNESS_SIMPLEX: 0.75,
             BASE_BRIGHTNESS_RADIAL: 0.9,
             BRIGHTNESS_VARIATION: 0.3,
@@ -1304,8 +1305,8 @@
                     this.userColorVar = PROGRAM_CONSTANTS.DEFAULT_COLOR_VAR;
                 }
                 
-                this.userMaxOpacity = PROGRAM_CONSTANTS.DEFAULT_OPACITY; // теперь 0.50
-                this.opacityFalloff = 0.25; // изменено с 0.5 на 0.25
+                this.userMaxOpacity = PROGRAM_CONSTANTS.DEFAULT_OPACITY;
+                this.opacityFalloff = 0.25;
                 
                 this.init();
                 
@@ -1771,7 +1772,12 @@
                         const nearestSpot = this.findNearestSpot(x, y, this.spots);
                         if (nearestSpot) {
                             const baseHue = nearestSpot.hue;
-                            const deviation = Math.random() * colorVarFactor;
+                            // ===== MODIFIED DEVIATION CALCULATION =====
+                            // Ensure minimum deviation of 5% (0.05) but not exceeding colorVarFactor
+                            const minDeviation = Math.min(colorVarFactor, 0.05);   // lower bound = 5% or less if colorVarFactor is smaller
+                            const maxDeviation = colorVarFactor;                    // upper bound = user setting
+                            // If colorVarFactor <= 0.05, then minDeviation = colorVarFactor and range = 0, so deviation = colorVarFactor.
+                            const deviation = minDeviation + Math.random() * (maxDeviation - minDeviation);
                             hue = (baseHue + deviation) % 1.0;
                         } else {
                             hue = Math.random();
@@ -1785,28 +1791,26 @@
                     });
                 }
 
-                // ========== НОВАЯ СОРТИРОВКА ==========
-                // Переставляем пятна так, чтобы порядок индексов соответствовал максимальной удалённости
+                // Rearrange spots so that the order of indices corresponds to maximum distance
                 if (this.spotCount > 1) {
                     this.spots = this.sortSpotsByMaxDistance(this.spots);
                 }
-                // ======================================
                 
                 if (this.spotDataUBO) {
                     this.spotDataUBO.update(this.spots);
                 }
             }
             
-            // Сортировка массива пятен: каждый следующий выбирается как самый дальний от предыдущего
+            // Sorting the array of spots: each next is chosen as the farthest from the previous
             sortSpotsByMaxDistance(spots) {
                 const n = spots.length;
                 if (n <= 1) return spots;
                 
-                // Индексы ещё не выбранных пятен
+                // Indices of remaining spots
                 const remaining = Array.from({ length: n }, (_, i) => i);
                 const sorted = [];
                 
-                // Берём первое пятно произвольно (например, индекс 0)
+                // Pick first spot arbitrarily (e.g., index 0)
                 let lastIdx = 0;
                 sorted.push(spots[lastIdx]);
                 remaining.splice(remaining.indexOf(lastIdx), 1);
@@ -1814,12 +1818,12 @@
                 while (remaining.length > 0) {
                     let bestIdx = -1;
                     let maxDistSq = -1;
-                    const lastSpot = spots[lastIdx]; // исходный массив, не сортированный
+                    const lastSpot = spots[lastIdx]; // original unsorted array
                     
                     for (let idx of remaining) {
                         const dx = spots[idx].center[0] - lastSpot.center[0];
                         const dy = spots[idx].center[1] - lastSpot.center[1];
-                        const distSq = dx * dx + dy * dy; // квадрат расстояния (корень не нужен)
+                        const distSq = dx * dx + dy * dy; // square distance (no sqrt needed)
                         if (distSq > maxDistSq) {
                             maxDistSq = distSq;
                             bestIdx = idx;
@@ -1831,7 +1835,7 @@
                     remaining.splice(remaining.indexOf(bestIdx), 1);
                 }
                 
-                return sorted; // новый порядок объектов (сами объекты не меняются)
+                return sorted; // new order of objects (objects themselves unchanged)
             }
             
             getMinSpotDistance(spotCount) {
@@ -1963,7 +1967,7 @@
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
 
-                // ❗ НЕ включаем звук, если разнообразие цветов меньше 30
+                // ❗ Do not enable sound if color variety is less than 30
                 if (this.userColorVar < 30) {
                     return;
                 }
