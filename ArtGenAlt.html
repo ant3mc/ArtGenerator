@@ -1791,7 +1791,7 @@
                     });
                 }
 
-                // Rearrange spots so that the order of indices corresponds to maximum distance
+                // Rearrange spots so that the order of indices corresponds to maximum distance with step X = floor(n/2)
                 if (this.spotCount > 1) {
                     this.spots = this.sortSpotsByMaxDistance(this.spots);
                 }
@@ -1801,29 +1801,34 @@
                 }
             }
             
-            // Sorting the array of spots: each next is chosen as the farthest from the previous
+            // New sorting: each element at index i (i >= X) is chosen as the farthest from element at index i-X
             sortSpotsByMaxDistance(spots) {
                 const n = spots.length;
                 if (n <= 1) return spots;
                 
-                // Indices of remaining spots
+                const X = Math.floor(n / 2);   // step size
+                
+                // Indices of remaining spots (original order)
                 const remaining = Array.from({ length: n }, (_, i) => i);
                 const sorted = [];
                 
-                // Pick first spot arbitrarily (e.g., index 0)
-                let lastIdx = 0;
-                sorted.push(spots[lastIdx]);
-                remaining.splice(remaining.indexOf(lastIdx), 1);
+                // Take first X spots in their original order
+                for (let i = 0; i < X; i++) {
+                    sorted.push(spots[i]);
+                    const idx = remaining.indexOf(i);
+                    if (idx !== -1) remaining.splice(idx, 1);
+                }
                 
-                while (remaining.length > 0) {
+                // For remaining positions
+                for (let i = X; i < n; i++) {
+                    const refSpot = sorted[i - X];  // reference spot X steps back
                     let bestIdx = -1;
                     let maxDistSq = -1;
-                    const lastSpot = spots[lastIdx]; // original unsorted array
                     
                     for (let idx of remaining) {
-                        const dx = spots[idx].center[0] - lastSpot.center[0];
-                        const dy = spots[idx].center[1] - lastSpot.center[1];
-                        const distSq = dx * dx + dy * dy; // square distance (no sqrt needed)
+                        const dx = spots[idx].center[0] - refSpot.center[0];
+                        const dy = spots[idx].center[1] - refSpot.center[1];
+                        const distSq = dx * dx + dy * dy;
                         if (distSq > maxDistSq) {
                             maxDistSq = distSq;
                             bestIdx = idx;
@@ -1831,11 +1836,11 @@
                     }
                     
                     sorted.push(spots[bestIdx]);
-                    lastIdx = bestIdx;
-                    remaining.splice(remaining.indexOf(bestIdx), 1);
+                    const remIdx = remaining.indexOf(bestIdx);
+                    if (remIdx !== -1) remaining.splice(remIdx, 1);
                 }
                 
-                return sorted; // new order of objects (objects themselves unchanged)
+                return sorted;
             }
             
             getMinSpotDistance(spotCount) {
