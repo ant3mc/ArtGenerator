@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Арт Генератор v1.4</title>
+    <title>Арт Генератор v1.5</title>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -332,7 +332,8 @@
             vec2 uv = gl_FragCoord.xy / u_resolution.xy;
             vec4 finalColor = vec4(0.0);
             
-            const float fadeFactor = 0.57142857;
+            // FBM edge opacity target: 25% of max (1 - fadeFactor = 0.25 -> fadeFactor = 0.75)
+            const float fadeFactor = 0.75;
             
             float minSize, maxSize;
             if (u_generationMethod == 0) { // FBM Spots
@@ -340,7 +341,7 @@
                 maxSize = 0.40;
             } else { // Radial Fade
                 minSize = 0.20;
-                maxSize = 0.40;
+                maxSize = 0.50;   // Changed from 0.40 to 0.50
             }
             
             int spotLimit = min(u_spotCount, 12);
@@ -372,9 +373,12 @@
                     
                     float dynamicSaturation = u_fixedSaturation * (0.8 + 0.2 * simplexNoise);
                     
+                    // Brightness gradient: 1 at center, 0 at edge
                     float brightnessGradient = 1.0 - smoothstep(0.0, currentSize * 0.7, dist);
                     float baseBrightness = 0.6 + simplexNoise * 0.3;
-                    float dynamicBrightness = baseBrightness * (0.7 + 0.6 * brightnessGradient);
+                    // Modified: edge brightness = 70% of center (was 50%)
+                    // center factor = 1.0, edge factor = 0.7
+                    float dynamicBrightness = baseBrightness * (0.7 + 0.3 * brightnessGradient);
                     
                     float hueVariation = simplexNoise * 0.03;
                     float animHue = mod(baseHue + u_time * u_hueSpeed + hueVariation, 1.0);
@@ -393,7 +397,8 @@
                     finalColor.a += alpha;
                     
                 } else if(u_generationMethod == 1) {
-                    float inner = currentSize * 0.3;
+                    // Radial Fade: modified to start fading from center (inner = 0.0)
+                    float inner = 0.0;  // previously currentSize * 0.3
                     float outer = currentSize;
                     
                     float edgeNoise = fbm_fast(toCenter * 5.0) * 0.07;
@@ -539,7 +544,7 @@
 
     <div id="aboutOverlay" class="screen" style="display: none; z-index: 25;">
         <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-            <h2 data-i18n-key="aboutTitle">Арт Генератор v1.4</h2>
+            <h2 data-i18n-key="aboutTitle">Арт Генератор v1.5</h2>
             <p id="aboutAuthor"><strong data-i18n-key="author">Автор:</strong> ant3mc</p>
             <p id="aboutYear"><strong data-i18n-key="year">Год:</strong> 2026</p>
             <p id="aboutLicense"><strong data-i18n-key="license">Лицензия:</strong> GNU AGPL-3.0-or-later</p>
@@ -580,7 +585,7 @@
         const MAX_SPOTS_GLOBAL = 12;
         
         const APP_CONFIG = {
-            version: "1.4",
+            version: "1.5",
             author: "ant3mc",
             year: "2026",
             license: "GNU AGPL-3.0-or-later",
@@ -679,7 +684,7 @@
                 errorTitle: "Произошла ошибка",
                 startError: "Ошибка запуска генерации",
                 loadingText: "Инициализация...",
-                aboutTitle: "Арт Генератор v1.4",
+                aboutTitle: "Арт Генератор v1.5",
                 author: "Автор",
                 year: "Год",
                 license: "Лицензия",
@@ -749,7 +754,7 @@
                 errorTitle: "An Error Occurred",
                 startError: "Error starting generation",
                 loadingText: "Initialization...",
-                aboutTitle: `Art Generator v1.4`,
+                aboutTitle: `Art Generator v1.5`,
                 author: "Author",
                 year: "Year",
                 license: "License",
@@ -1754,7 +1759,6 @@
                 gl.blendEquation(gl.FUNC_ADD);
             }
             
-            // ================== ИЗМЕНЁННЫЙ МЕТОД generateSpots() ==================
             generateSpots() {
                 const methodValue = this.generationMethodSelect.value;
                 let baseMethod = 'fbm';
@@ -1772,7 +1776,7 @@
                 this.currentBaseMethod = baseMethod;
                 this.spots = [];
                 
-                const colorVarFactor = this.userColorVar / 100.0; // значение настройки от 0 до 1
+                const colorVarFactor = this.userColorVar / 100.0;
                 
                 for (let i = 0; i < this.spotCount; i++) {
                     let attempts = 0;
@@ -1799,25 +1803,21 @@
                     
                     let hue;
                     if (this.spots.length === 0) {
-                        // Первое пятно – случайный оттенок
                         hue = Math.random();
                     } else {
                         const nearestSpot = this.findNearestSpot(x, y, this.spots);
                         if (nearestSpot) {
                             const baseHue = nearestSpot.hue;
-                            // Новая логика вычисления отклонения
-                            const minDeviation = Math.min(0.05, colorVarFactor);      // порог 5% (0.05)
+                            const minDeviation = Math.min(0.05, colorVarFactor);
                             let deviation;
                             if (colorVarFactor > minDeviation) {
-                                // Случайное значение в интервале [minDeviation, colorVarFactor]
                                 deviation = minDeviation + Math.random() * (colorVarFactor - minDeviation);
                             } else {
-                                // Настройка ≤ 5% → фиксированное отклонение = colorVarFactor
                                 deviation = colorVarFactor;
                             }
                             hue = (baseHue + deviation) % 1.0;
                         } else {
-                            hue = Math.random();  // резервный случай, но обычно не достигается
+                            hue = Math.random();
                         }
                     }
                     
@@ -1833,7 +1833,6 @@
                     this.spotDataUBO.update(this.spots);
                 }
             }
-            // ================== КОНЕЦ ИЗМЕНЁННОГО МЕТОДА ==================
             
             getMinSpotDistance(spotCount) {
                 return PROGRAM_CONSTANTS.SPOT_DISTANCES[spotCount] || PROGRAM_CONSTANTS.SPOT_DISTANCES[12];
@@ -1957,7 +1956,6 @@
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
                 
-                // Do not enable sound if color variety < 35
                 if (this.userColorVar < 35) {
                     console.log('Audio disabled: color variety < 35%');
                     return;
