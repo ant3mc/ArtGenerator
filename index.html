@@ -341,7 +341,7 @@
                 maxSize = 0.40;
             } else { // Radial Fade
                 minSize = 0.20;
-                maxSize = 0.50;   // Changed from 0.40 to 0.50
+                maxSize = 0.50;
             }
             
             int spotLimit = min(u_spotCount, 12);
@@ -373,12 +373,9 @@
                     
                     float dynamicSaturation = u_fixedSaturation * (0.8 + 0.2 * simplexNoise);
                     
-                    // Brightness gradient: 1 at center, 0 at edge
-                    float brightnessGradient = 1.0 - smoothstep(0.0, currentSize * 0.7, dist);
+                    // Brightness: no gradient falloff, only noise variation
                     float baseBrightness = 0.6 + simplexNoise * 0.3;
-                    // Modified: edge brightness = 70% of center (was 50%)
-                    // center factor = 1.0, edge factor = 0.7
-                    float dynamicBrightness = baseBrightness * (0.7 + 0.3 * brightnessGradient);
+                    float dynamicBrightness = baseBrightness; // removed distance-based gradient
                     
                     float hueVariation = simplexNoise * 0.03;
                     float animHue = mod(baseHue + u_time * u_hueSpeed + hueVariation, 1.0);
@@ -391,14 +388,14 @@
                     float alpha = spotShape * (baseAlpha - dist / currentSize * alphaFade);
                     alpha = clamp(alpha, 0.0, baseAlpha);
                     
-                    // Fixed blend mode: premultiplied (u_blendMode is always 0)
+                    // Fixed blend mode: premultiplied
                     vec3 premultipliedColor = spotColor * alpha;
                     finalColor.rgb += premultipliedColor;
                     finalColor.a += alpha;
                     
                 } else if(u_generationMethod == 1) {
                     // Radial Fade: modified to start fading from center (inner = 0.0)
-                    float inner = 0.0;  // previously currentSize * 0.3
+                    float inner = 0.0;
                     float outer = currentSize;
                     
                     float edgeNoise = fbm_fast(toCenter * 5.0) * 0.07;
@@ -418,7 +415,7 @@
                     vec3 spotColor = hsv2rgb(vec3(animHue, saturation, baseBrightness));
                     spotColor *= u_brightness;
                     
-                    // Fixed blend mode: premultiplied (u_blendMode is always 0)
+                    // Fixed blend mode: premultiplied
                     vec3 premultipliedColor = spotColor * alpha;
                     finalColor.rgb += premultipliedColor;
                     finalColor.a += alpha;
