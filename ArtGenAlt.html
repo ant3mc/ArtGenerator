@@ -4,7 +4,7 @@
     <!-- All comments in this file must be in English. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Art Generator Alt v1.3</title>
+    <title>Art Generator Alt v1.4</title>
     
     <!-- ============================= -->
     <!-- SECTION 1: CSS STYLES -->
@@ -526,7 +526,7 @@
 
     <div id="aboutOverlay" class="screen" style="display: none; z-index: 25;">
         <div style="background: #1a1a1a; padding: 30px; border-radius: 10px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-            <h2 data-i18n-key="aboutTitle">Арт Генератор Альт v1.3</h2>
+            <h2 data-i18n-key="aboutTitle">Арт Генератор Альт v1.4</h2>
             <p id="aboutAuthor"><strong data-i18n-key="author">Автор:</strong> ant3mc</p>
             <p id="aboutYear"><strong data-i18n-key="year">Год:</strong> 2026</p>
             <p id="aboutLicense"><strong data-i18n-key="license">Лицензия:</strong> GNU AGPL-3.0-or-later</p>
@@ -574,7 +574,7 @@
         // All program constants in one object
         const PROGRAM_CONSTANTS = {
             // Metadata
-            VERSION: "1.3",
+            VERSION: "1.4",
             AUTHOR: "ant3mc",
             YEAR: "2026",
             LICENSE: "GNU AGPL-3.0-or-later",
@@ -613,7 +613,7 @@
             BREATH_TO_GAIN_RATIO: 0.05,
             
             // Color constants
-            DEFAULT_SATURATION: 0.65,          // <-- changed from 0.6 to 0.65
+            DEFAULT_SATURATION: 0.65,
             DEFAULT_BRIGHTNESS: 1.0,
             DEFAULT_OPACITY: 0.50,
             DEFAULT_COLOR_VAR: 40,
@@ -683,7 +683,7 @@
                 errorTitle: "Произошла ошибка",
                 startError: "Ошибка запуска генерации",
                 loadingText: "Инициализация...",
-                aboutTitle: "Арт Генератор Альт v1.3",
+                aboutTitle: "Арт Генератор Альт v1.4",
                 author: "Автор",
                 year: "Год",
                 license: "Лицензия",
@@ -753,7 +753,7 @@
                 errorTitle: "An Error Occurred",
                 startError: "Error starting generation",
                 loadingText: "Initialization...",
-                aboutTitle: "Art Generator Alt v1.3",
+                aboutTitle: "Art Generator Alt v1.4",
                 author: "Author",
                 year: "Year",
                 license: "License",
@@ -1742,6 +1742,7 @@
                 
                 const colorVarFactor = this.userColorVar / 100.0;
                 
+                // 1. Generate positions with distance constraints
                 for (let i = 0; i < this.spotCount; i++) {
                     let attempts = 0;
                     let valid = false;
@@ -1772,11 +1773,8 @@
                         const nearestSpot = this.findNearestSpot(x, y, this.spots);
                         if (nearestSpot) {
                             const baseHue = nearestSpot.hue;
-                            // ===== MODIFIED DEVIATION CALCULATION =====
-                            // Ensure minimum deviation of 5% (0.05) but not exceeding colorVarFactor
-                            const minDeviation = Math.min(colorVarFactor, 0.05);   // lower bound = 5% or less if colorVarFactor is smaller
-                            const maxDeviation = colorVarFactor;                    // upper bound = user setting
-                            // If colorVarFactor <= 0.05, then minDeviation = colorVarFactor and range = 0, so deviation = colorVarFactor.
+                            const minDeviation = Math.min(colorVarFactor, 0.05);
+                            const maxDeviation = colorVarFactor;
                             const deviation = minDeviation + Math.random() * (maxDeviation - minDeviation);
                             hue = (baseHue + deviation) % 1.0;
                         } else {
@@ -1790,10 +1788,27 @@
                         hue: hue
                     });
                 }
-
-                // Rearrange spots so that the order of indices corresponds to maximum distance with step X = floor(n/2)
+                
+                // 2. Reorder to make paired spots the closest (instead of farthest)
                 if (this.spotCount > 1) {
-                    this.spots = this.sortSpotsByMaxDistance(this.spots);
+                    this.spots = this.sortSpotsByMinDistance(this.spots);
+                }
+                
+                // 3. Adjust phases for paired spots (i and i + N/2) to differ by 10-25% with same direction
+                const half = Math.floor(this.spotCount / 2);
+                if (half > 0) {
+                    for (let i = 0; i < half; i++) {
+                        const idxFirst = i;
+                        const idxSecond = i + half;
+                        if (idxSecond >= this.spots.length) break;
+                        
+                        const phaseFirst = this.spots[idxFirst].phase;
+                        // Delta between 0.1*2π and 0.25*2π
+                        const delta = (0.1 + Math.random() * (0.25 - 0.1)) * 2 * Math.PI;
+                        // Same direction: always add delta (positive)
+                        const phaseSecond = (phaseFirst + delta) % (2 * Math.PI);
+                        this.spots[idxSecond].phase = phaseSecond;
+                    }
                 }
                 
                 if (this.spotDataUBO) {
@@ -1801,12 +1816,12 @@
                 }
             }
             
-            // New sorting: each element at index i (i >= X) is chosen as the farthest from element at index i-X
-            sortSpotsByMaxDistance(spots) {
+            // New sorting: each element at index i (i >= X) is chosen as the closest to element at index i-X
+            sortSpotsByMinDistance(spots) {
                 const n = spots.length;
                 if (n <= 1) return spots;
                 
-                const X = Math.floor(n / 2);   // step size
+                const X = Math.floor(n / 2);
                 
                 // Indices of remaining spots (original order)
                 const remaining = Array.from({ length: n }, (_, i) => i);
@@ -1821,16 +1836,16 @@
                 
                 // For remaining positions
                 for (let i = X; i < n; i++) {
-                    const refSpot = sorted[i - X];  // reference spot X steps back
+                    const refSpot = sorted[i - X];
                     let bestIdx = -1;
-                    let maxDistSq = -1;
+                    let minDistSq = Infinity;
                     
                     for (let idx of remaining) {
                         const dx = spots[idx].center[0] - refSpot.center[0];
                         const dy = spots[idx].center[1] - refSpot.center[1];
                         const distSq = dx * dx + dy * dy;
-                        if (distSq > maxDistSq) {
-                            maxDistSq = distSq;
+                        if (distSq < minDistSq) {
+                            minDistSq = distSq;
                             bestIdx = idx;
                         }
                     }
