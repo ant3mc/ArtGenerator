@@ -1770,9 +1770,16 @@
                     if (this.spots.length === 0) {
                         hue = Math.random();
                     } else {
-                        const nearestSpot = this.findNearestSpot(x, y, this.spots);
-                        if (nearestSpot) {
-                            const baseHue = nearestSpot.hue;
+                        // Use second nearest spot instead of nearest
+                        let baseSpot = null;
+                        if (this.spots.length === 1) {
+                            // Only one spot exists, use it as base
+                            baseSpot = this.spots[0];
+                        } else {
+                            baseSpot = this.findSecondNearestSpot(x, y, this.spots);
+                        }
+                        if (baseSpot) {
+                            const baseHue = baseSpot.hue;
                             const minDeviation = Math.min(colorVarFactor, 0.05);
                             const maxDeviation = colorVarFactor;
                             const deviation = minDeviation + Math.random() * (maxDeviation - minDeviation);
@@ -1862,24 +1869,31 @@
                 return PROGRAM_CONSTANTS.SPOT_DISTANCES[spotCount] || PROGRAM_CONSTANTS.SPOT_DISTANCES[12];
             }
             
-            findNearestSpot(newX, newY, existingSpots) {
+            // Find the second nearest spot (or the nearest if there is only one)
+            findSecondNearestSpot(newX, newY, existingSpots) {
                 if (existingSpots.length === 0) return null;
+                if (existingSpots.length === 1) return existingSpots[0];
                 
-                let nearestSpot = existingSpots[0];
-                let minDistance = Infinity;
+                let first = null, second = null;
+                let firstDist = Infinity, secondDist = Infinity;
                 
                 for (const spot of existingSpots) {
                     const dx = newX - spot.center[0];
                     const dy = newY - spot.center[1];
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
                     
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearestSpot = spot;
+                    if (dist < firstDist) {
+                        secondDist = firstDist;
+                        second = first;
+                        firstDist = dist;
+                        first = spot;
+                    } else if (dist < secondDist) {
+                        secondDist = dist;
+                        second = spot;
                     }
                 }
-                
-                return nearestSpot;
+                // Return second nearest (which is guaranteed to exist because length >= 2)
+                return second;
             }
             
             updateColorBoostFromUI() {
