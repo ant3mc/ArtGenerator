@@ -440,18 +440,7 @@
                         <option value="radial_12">Радиальный градиент — 12 точек</option>
                     </select>
                 </div>
-                <div class="setup-group" data-i18n-key="colorLabel">
-                    <h3>Цветовой акцент</h3>
-                    <select id="colorAccent">
-                        <option value="none">Без акцента</option>
-                        <option value="red">Красный+</option>
-                        <option value="green">Зеленый+</option>
-                        <option value="blue">Синий+</option>
-                        <option value="red_minus">Красный-</option>
-                        <option value="green_minus">Зеленый-</option>
-                        <option value="blue_minus">Синий-</option>
-                    </select>
-                </div>
+                <!-- Color accent control completely removed -->
                 <div class="setup-group" data-i18n-key="speedLabel">
                     <h3>Скорость вращения оттенка</h3>
                     <select id="hueSpeed">
@@ -672,7 +661,6 @@
                 understandBtn: "Понятно",
                 settingsTitle: "Настройки генерации",
                 methodLabel: "Метод генерации",
-                colorLabel: "Цветовой акцент",
                 saturationLabel: "Насыщенность",
                 opacityLabel: "Макс. непрозрачность",
                 colorVarLabel: "Разнообразие цветов %",
@@ -704,15 +692,6 @@
                     radial_10: "Радиальный градиент — 10 точек",
                     radial_12: "Радиальный градиент — 12 точек"
                 },
-                colorOptions: {
-                    none: "Без акцента",
-                    red: "Красный+",
-                    green: "Зеленый+",
-                    blue: "Синий+",
-                    red_minus: "Красный-",
-                    green_minus: "Зеленый-",
-                    blue_minus: "Синий-"
-                },
                 speedOptions: {
                     "0.05": "1×",
                     "0.075": "1.5×",
@@ -742,7 +721,6 @@
                 understandBtn: "OK",
                 settingsTitle: "Generation Settings",
                 methodLabel: "Generation Method",
-                colorLabel: "Color Accent",
                 saturationLabel: "Saturation",
                 opacityLabel: "Max Opacity",
                 colorVarLabel: "Color Variety %",
@@ -766,15 +744,6 @@
                     radial_8: "Radial Gradient — 8 Spots",
                     radial_10: "Radial Gradient — 10 Spots",
                     radial_12: "Radial Gradient — 12 Spots"
-                },
-                colorOptions: {
-                    none: "No Accent",
-                    red: "Red+",
-                    green: "Green+",
-                    blue: "Blue+",
-                    red_minus: "Red-",
-                    green_minus: "Green-",
-                    blue_minus: "Blue-"
                 },
                 speedOptions: {
                     "0.05": "1×",
@@ -1228,7 +1197,7 @@
                 this.startButtonMain = document.getElementById('startButtonMain');
                 this.backButton = document.getElementById('backButton');
                 this.generationMethodSelect = document.getElementById('generationMethod');
-                this.colorAccentSelect = document.getElementById('colorAccent');
+                // Color accent select removed
                 this.audioModeSelect = document.getElementById('audioMode');
                 this.masterVolumeSlider = document.getElementById('masterVolume');
                 this.volumeValueDisplay = document.getElementById('volumeValue');
@@ -1255,6 +1224,7 @@
                 this.startTime = 0;
                 this.spotCount = 0;
                 this.spots = [];
+                // Color boost fixed to identity (fully removed color accent control)
                 this.colorBoost = [1.0, 1.0, 1.0];
                 this.currentBaseMethod = 'simplex';
                 this.hueSpeed = 0.05;
@@ -1539,10 +1509,9 @@
                 });
                 
                 this.updateSelectOptions('generationMethod', t.methodOptions);
-                this.updateSelectOptions('colorAccent', t.colorOptions);
+                // Color accent options removed
                 this.updateSelectOptions('hueSpeed', t.speedOptions);
                 this.updateSelectOptions('audioMode', t.audioOptions);
-                // blendMode options removed
                 
                 // Use PROGRAM_CONSTANTS for metadata
                 document.getElementById('aboutAuthor').innerHTML = `<strong>${t.author}:</strong> ${PROGRAM_CONSTANTS.AUTHOR}`;
@@ -1575,7 +1544,7 @@
                     this.switchToScreen('generation');
                     this.isRunning = true;
                     this.startTime = performance.now();
-                    this.updateColorBoostFromUI();
+                    // Color boost is fixed to identity, no need to update from UI
                     await this.initWebGL();
                     this.initAudio();
                     this.generateSpots();
@@ -1770,10 +1739,8 @@
                     if (this.spots.length === 0) {
                         hue = Math.random();
                     } else {
-                        // Use second nearest spot instead of nearest
                         let baseSpot = null;
                         if (this.spots.length === 1) {
-                            // Only one spot exists, use it as base
                             baseSpot = this.spots[0];
                         } else {
                             baseSpot = this.findSecondNearestSpot(x, y, this.spots);
@@ -1796,12 +1763,12 @@
                     });
                 }
                 
-                // 2. Reorder to make paired spots the closest (instead of farthest)
+                // 2. Reorder to make paired spots the closest
                 if (this.spotCount > 1) {
                     this.spots = this.sortSpotsByMinDistance(this.spots);
                 }
                 
-                // 3. Adjust phases for paired spots (i and i + N/2) to differ by 10-25% with same direction
+                // 3. Adjust phases for paired spots
                 const half = Math.floor(this.spotCount / 2);
                 if (half > 0) {
                     for (let i = 0; i < half; i++) {
@@ -1810,9 +1777,7 @@
                         if (idxSecond >= this.spots.length) break;
                         
                         const phaseFirst = this.spots[idxFirst].phase;
-                        // Delta between 0.1*2π and 0.25*2π
                         const delta = (0.1 + Math.random() * (0.25 - 0.1)) * 2 * Math.PI;
-                        // Same direction: always add delta (positive)
                         const phaseSecond = (phaseFirst + delta) % (2 * Math.PI);
                         this.spots[idxSecond].phase = phaseSecond;
                     }
@@ -1823,25 +1788,20 @@
                 }
             }
             
-            // New sorting: each element at index i (i >= X) is chosen as the closest to element at index i-X
             sortSpotsByMinDistance(spots) {
                 const n = spots.length;
                 if (n <= 1) return spots;
                 
                 const X = Math.floor(n / 2);
-                
-                // Indices of remaining spots (original order)
                 const remaining = Array.from({ length: n }, (_, i) => i);
                 const sorted = [];
                 
-                // Take first X spots in their original order
                 for (let i = 0; i < X; i++) {
                     sorted.push(spots[i]);
                     const idx = remaining.indexOf(i);
                     if (idx !== -1) remaining.splice(idx, 1);
                 }
                 
-                // For remaining positions
                 for (let i = X; i < n; i++) {
                     const refSpot = sorted[i - X];
                     let bestIdx = -1;
@@ -1869,7 +1829,6 @@
                 return PROGRAM_CONSTANTS.SPOT_DISTANCES[spotCount] || PROGRAM_CONSTANTS.SPOT_DISTANCES[12];
             }
             
-            // Find the second nearest spot (or the nearest if there is only one)
             findSecondNearestSpot(newX, newY, existingSpots) {
                 if (existingSpots.length === 0) return null;
                 if (existingSpots.length === 1) return existingSpots[0];
@@ -1892,21 +1851,7 @@
                         second = spot;
                     }
                 }
-                // Return second nearest (which is guaranteed to exist because length >= 2)
                 return second;
-            }
-            
-            updateColorBoostFromUI() {
-                const accent = this.colorAccentSelect.value;
-                switch (accent) {
-                    case 'red': this.colorBoost = [1.1, 1.0, 1.0]; break;
-                    case 'green': this.colorBoost = [1.0, 1.1, 1.0]; break;
-                    case 'blue': this.colorBoost = [1.0, 1.0, 1.1]; break;
-                    case 'red_minus': this.colorBoost = [0.9, 1.0, 1.0]; break;
-                    case 'green_minus': this.colorBoost = [1.0, 0.9, 1.0]; break;
-                    case 'blue_minus': this.colorBoost = [1.0, 1.0, 0.9]; break;
-                    default: this.colorBoost = [1.0, 1.0, 1.0];
-                }
             }
             
             // ============ MAIN RENDER LOOP ============
@@ -1978,6 +1923,7 @@
                 gl.uniform1f(this.hueSpeedUniformLocation, this.hueSpeed);
                 gl.uniform1f(this.pulseSpeedUniformLocation, this.pulseSpeed);
                 gl.uniform1i(this.spotCountUniformLocation, this.spotCount);
+                // Fixed color boost (no accent adjustment)
                 gl.uniform3fv(this.colorBoostUniformLocation, this.colorBoost);
                 gl.uniform1i(this.generationMethodUniformLocation, this.currentBaseMethod === 'simplex' ? 0 : 1);
                 gl.uniform1f(this.saturationUniformLocation, this.userSaturationValue);
@@ -2001,7 +1947,6 @@
                 const audioMode = this.audioModeSelect.value;
                 if (audioMode === 'none') return;
 
-                // ❗ Do not enable sound if color variety is less than 30
                 if (this.userColorVar < 30) {
                     return;
                 }
@@ -2020,7 +1965,6 @@
             }
             
             updateAudio() {
-                // Disable sound when more than 10 spots
                 if (this.spotCount > 10) {
                     if (this.audioPool) {
                         for (let i = 0; i < this.MAX_SPOTS; i++) {
