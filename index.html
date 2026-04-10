@@ -375,7 +375,7 @@
                     
                     // Brightness: no gradient falloff, only noise variation
                     float baseBrightness = 0.6 + simplexNoise * 0.3;
-                    float dynamicBrightness = baseBrightness; // removed distance-based gradient
+                    float dynamicBrightness = baseBrightness;
                     
                     float hueVariation = simplexNoise * 0.03;
                     float animHue = mod(baseHue + u_time * u_hueSpeed + hueVariation, 1.0);
@@ -456,18 +456,7 @@
                         <option value="fade_12">Radial Fade — 12 точек</option>
                     </select>
                 </div>
-                <div class="setup-group" data-i18n-key="colorLabel">
-                    <h3>Цветовой акцент</h3>
-                    <select id="colorAccent">
-                        <option value="none">Без акцента</option>
-                        <option value="red">Красный+</option>
-                        <option value="green">Зеленый+</option>
-                        <option value="blue">Синий+</option>
-                        <option value="red_minus">Красный-</option>
-                        <option value="green_minus">Зеленый-</option>
-                        <option value="blue_minus">Синий-</option>
-                    </select>
-                </div>
+                <!-- Color accent control removed completely -->
                 <div class="setup-group" data-i18n-key="speedLabel">
                     <h3>Скорость вращения оттенка</h3>
                     <select id="hueSpeed">
@@ -520,8 +509,8 @@
                 </div>
                 <div class="setup-group" data-i18n-key="colorVarLabel">
                     <h3>Разнообразие цветов %</h3>
-                    <input type="range" id="colorVar" min="0" max="100" step="1" value="41">
-                    <span id="colorVarDisplay">41</span>
+                    <input type="range" id="colorVar" min="0" max="100" step="1" value="40">
+                    <span id="colorVarDisplay">40</span>
                 </div>
             </div>
         </div>
@@ -621,7 +610,7 @@
             DEFAULT_SATURATION: 0.75,
             DEFAULT_BRIGHTNESS: 1.0,
             DEFAULT_OPACITY: 0.5,
-            DEFAULT_COLOR_VAR: 41,
+            DEFAULT_COLOR_VAR: 40,
             BASE_BRIGHTNESS_SIMPLEX: 0.6,
             BASE_BRIGHTNESS_RADIAL: 0.7,
             BRIGHTNESS_VARIATION: 0.3,
@@ -669,7 +658,6 @@
                 understandBtn: "Понятно",
                 settingsTitle: "Настройки генерации",
                 methodLabel: "Метод генерации",
-                colorLabel: "Цветовой акцент",
                 saturationLabel: "Насыщенность",
                 opacityLabel: "Макс. прозрачность",
                 brightnessLabel: "Яркость",
@@ -701,15 +689,6 @@
                     fade_10: "Radial Fade — 10 точек",
                     fade_12: "Radial Fade — 12 точек"
                 },
-                colorOptions: {
-                    none: "Без акцента",
-                    red: "Красный+",
-                    green: "Зеленый+",
-                    blue: "Синий+",
-                    red_minus: "Красный-",
-                    green_minus: "Зеленый-",
-                    blue_minus: "Синий-"
-                },
                 speedOptions: {
                     "0.05": "1×",
                     "0.075": "1.5×",
@@ -739,7 +718,6 @@
                 understandBtn: "OK",
                 settingsTitle: "Generation Settings",
                 methodLabel: "Generation Method",
-                colorLabel: "Color Accent",
                 saturationLabel: "Saturation",
                 opacityLabel: "Max Opacity",
                 brightnessLabel: "Brightness",
@@ -763,15 +741,6 @@
                     fade_8: "Radial Fade — 8 Spots",
                     fade_10: "Radial Fade — 10 Spots",
                     fade_12: "Radial Fade — 12 Spots"
-                },
-                colorOptions: {
-                    none: "No Accent",
-                    red: "Red+",
-                    green: "Green+",
-                    blue: "Blue+",
-                    red_minus: "Red-",
-                    green_minus: "Green-",
-                    blue_minus: "Blue-"
                 },
                 speedOptions: {
                     "0.05": "1×",
@@ -1246,7 +1215,6 @@
                 this.startButtonMain = document.getElementById('startButtonMain');
                 this.backButton = document.getElementById('backButton');
                 this.generationMethodSelect = document.getElementById('generationMethod');
-                this.colorAccentSelect = document.getElementById('colorAccent');
                 this.audioModeSelect = document.getElementById('audioMode');
                 this.masterVolumeSlider = document.getElementById('masterVolume');
                 this.volumeValueDisplay = document.getElementById('volumeValue');
@@ -1549,7 +1517,6 @@
                 });
                 
                 this.updateSelectOptions('generationMethod', t.methodOptions);
-                this.updateSelectOptions('colorAccent', t.colorOptions);
                 this.updateSelectOptions('hueSpeed', t.speedOptions);
                 this.updateSelectOptions('audioMode', t.audioOptions);
                 
@@ -1582,7 +1549,8 @@
                     this.switchToScreen('generation');
                     this.isRunning = true;
                     this.startTime = performance.now();
-                    this.updateColorBoostFromUI();
+                    // Color accent removed: always neutral boost
+                    this.colorBoost = [1.0, 1.0, 1.0];
                     await this.initWebGL();
                     this.initAudio();
                     this.generateSpots();
@@ -1751,7 +1719,6 @@
                 
                 const gl = this.gl;
                 gl.enable(gl.BLEND);
-                // Fixed to premultiplied
                 gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
                 gl.blendEquation(gl.FUNC_ADD);
             }
@@ -1855,19 +1822,6 @@
                 return nearestSpot;
             }
             
-            updateColorBoostFromUI() {
-                const accent = this.colorAccentSelect.value;
-                switch (accent) {
-                    case 'red': this.colorBoost = [1.1, 1.0, 1.0]; break;
-                    case 'green': this.colorBoost = [1.0, 1.1, 1.0]; break;
-                    case 'blue': this.colorBoost = [1.0, 1.0, 1.1]; break;
-                    case 'red_minus': this.colorBoost = [0.9, 1.0, 1.0]; break;
-                    case 'green_minus': this.colorBoost = [1.0, 0.9, 1.0]; break;
-                    case 'blue_minus': this.colorBoost = [1.0, 1.0, 0.9]; break;
-                    default: this.colorBoost = [1.0, 1.0, 1.0];
-                }
-            }
-            
             renderLoop() {
                 if (!this.isRunning) {
                     if (this.animationId) {
@@ -1941,7 +1895,6 @@
                 gl.uniform1f(this.saturationUniformLocation, this.userSaturationValue);
                 gl.uniform1f(this.maxOpacityUniformLocation, this.userMaxOpacity);
                 gl.uniform1f(this.brightnessUniformLocation, this.userBrightness);
-                // Fixed blend mode index = 0 (premultiplied)
                 gl.uniform1i(this.blendModeUniformLocation, 0);
                 
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
